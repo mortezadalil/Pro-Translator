@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation</title>
+    <link rel="stylesheet" href="./assets/fonts/vazir-font.css">
+    <style>
+        :root {
+            --bg-color: #f5f5f7;
+            --window-bg: rgba(255, 255, 255, 0.9);
+            --text-color: #1d1d1f;
+            --border-color: #e2e2e7;
+            --input-bg: #ffffff;
+            --caption-color: #86868b;
+            --primary-color: #0071e3;
+            --primary-hover: #0077ed;
+            --primary-active: #0068d1;
+            --secondary-bg: #e2e2e7;
+            --secondary-hover: #d6d6dc;
+            --secondary-active: #c9c9d0;
+            --debug-bg: #f5f5f7;
+            --divider-color: #e2e2e7;
+            --scrollbar-track: rgba(0, 0, 0, 0.05);
+            --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+            --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+        }
+        
+        [data-theme="dark"] {
+            --bg-color: #1e1e1e;
+            --window-bg: rgba(30, 30, 30, 0.95);
+            --text-color: #f5f5f7;
+            --border-color: #3d3d3d;
+            --input-bg: #2d2d2d;
+            --caption-color: #a1a1a6;
+            --primary-color: #0a84ff;
+            --primary-hover: #409cff;
+            --primary-active: #0060d3;
+            --secondary-bg: #3d3d3d;
+            --secondary-hover: #4d4d4d;
+            --secondary-active: #5d5d5d;
+            --debug-bg: #2d2d2d;
+            --divider-color: #3d3d3d;
+            --scrollbar-track: rgba(255, 255, 255, 0.05);
+            --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+            --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Custom scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 10px;
+            transition: background 0.2s ease;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
+        }
+        
+        /* Hide scrollbar when not in use, but maintain functionality */
+        .content-area:not(:hover)::-webkit-scrollbar-thumb,
+        .text-container:not(:hover)::-webkit-scrollbar-thumb {
+            background: transparent;
+        }
+        
+        /* Add fade effect for scrollable content */
+        .text-container {
+            position: relative;
+        }
+        
+        .text-container::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: linear-gradient(transparent, var(--input-bg));
+            pointer-events: none;
+            opacity: 0.8;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+        
+        body {
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', 'Lucida Grande', sans-serif;
+            padding: 0;
+            margin: 0;
+            user-select: text;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 13px;
+            line-height: 1.4;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .mac-window {
+            background-color: var(--window-bg);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            padding: 16px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            flex: 1;
+            margin: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background-color 0.3s;
+            position: relative;
+        }
+        
+        .pin-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            transition: background-color 0.2s;
+            min-width: 100px;
+        }
+        
+        .pin-button:hover {
+            background-color: var(--secondary-hover);
+        }
+        
+        .pin-button:active {
+            background-color: var(--secondary-active);
+        }
+        
+        .pin-button svg {
+            width: 14px;
+            height: 14px;
+            margin-right: 6px;
+            fill: var(--text-color);
+        }
+        
+        .pin-button.pinned {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .pin-button.pinned svg {
+            fill: white;
+        }
+        
+        .pin-button.pinned:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .pin-button.pinned:active {
+            background-color: var(--primary-active);
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+            margin-bottom: 16px;
+        }
+        
+        .text-section {
+            margin-bottom: 16px;
+        }
+        
+        .section-header {
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-color);
+        }
+        
+        .text-container {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            height: auto;
+            max-height: 180px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            margin-top: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.5;
+            user-select: text;
+            -webkit-user-select: text;
+            cursor: text;
+            position: relative;
+        }
+        
+        .translated {
+            direction: rtl;
+            text-align: right;
+            font-family: 'Vazirmatn', 'Tahoma', 'Segoe UI', 'Arial', sans-serif;
+        }
+        
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            padding: 16px 0;
+            background-color: var(--window-bg);
+            border-top: 1px solid var(--divider-color);
+            flex-shrink: 0;
+            position: relative;
+            margin-top: 10px;
+            margin-bottom: 11px;
+        }
+        
+        .selection-status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            width: 90%;
+            max-width: 480px;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 16px;
+            font-size: 12px;
+            border-radius: 8px 8px 0 0;
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            z-index: 999;
+            box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
+            height: 24px;
+            margin-bottom: 0;
+        }
+        
+        .selection-status-bar.active {
+            transform: translateX(-50%) translateY(0);
+            opacity: 0.95;
+        }
+        
+        .selection-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .selection-action-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            height: 18px;
+            line-height: 1;
+        }
+        
+        .selection-action-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        button:active {
+            background-color: var(--primary-active);
+        }
+        
+        .secondary-button {
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
+        }
+        
+        .secondary-button:hover {
+            background-color: var(--secondary-hover);
+        }
+        
+        .secondary-button:active {
+            background-color: var(--secondary-active);
+        }
+        
+        .copy-small {
+            font-size: 12px;
+            padding: 4px 8px;
+            background-color: transparent;
+            color: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        .copy-small:hover {
+            background-color: rgba(0, 113, 227, 0.1);
+        }
+        
+        .loader {
+            display: inline-block;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            width: 12px;
+            height: 12px;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .debug-info {
+            margin-top: 10px;
+            padding: 5px;
+            font-size: 11px;
+            background-color: var(--debug-bg);
+            border-radius: 6px;
+            color: var(--caption-color);
+            display: none;
+            font-family: Menlo, Monaco, Consolas, monospace;
+        }
+        
+        /* Context menu styles */
+        .context-menu {
+            position: absolute;
+            z-index: 10;
+            background-color: var(--window-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: none;
+            overflow: hidden;
+        }
+        
+        .context-menu-item {
+            padding: 8px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            border-radius: 0;
+        }
+        
+        .context-menu-item:hover {
+            background-color: var(--secondary-hover);
+        }
+        
+        .text-selection-info {
+            position: absolute;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="mac-window">
+        <div class="container">
+            <div class="content-area">
+                <div class="text-section">
+                    <div class="section-header">
+                        <span>Translation</span>
+                        <button class="copy-small" id="copy-translation-btn">Copy</button>
+                    </div>
+                    <div class="text-container translated persian-text" id="translated-text">
+                        <span class="loader"></span>
+                    </div>
+                </div>
+                
+                <div class="text-section">
+                    <div class="section-header">
+                        <span>Original Text</span>
+                        <button class="copy-small" id="copy-original-btn">Copy</button>
+                    </div>
+                    <div class="text-container" id="original-text"></div>
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <button class="pin-button" id="pin-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                        <path d="M32 32C32 14.3 46.3 0 64 0H320c17.7 0 32 14.3 32 32s-14.3 32-32 32H290.5l11.4 148.2c36.7 19.9 65.7 53.2 79.5 94.7l1 3c3.3 9.8 1.6 20.5-4.4 28.8s-15.7 13.3-26 13.3H32c-10.3 0-19.9-4.9-26-13.3s-7.7-19.1-4.4-28.8l1-3c13.8-41.5 42.8-74.8 79.5-94.7L93.5 64H64C46.3 64 32 49.7 32 32zM160 384h64v96c0 17.7-14.3 32-32 32s-32-14.3-32-32V384z"/>
+                    </svg>
+                    <span class="pin-label">Pin</span>
+                </button>
+                <button id="copy-btn">Copy Translation</button>
+            </div>
+            
+            <div class="debug-info" id="debug-info"></div>
+            
+            <!-- Context menu for text selection -->
+            <div class="context-menu" id="context-menu">
+                <button class="context-menu-item" id="context-copy">Copy</button>
+                <button class="context-menu-item" id="context-save">Save</button>
+            </div>
+            
+            <!-- Selection info tooltip -->
+            <div class="text-selection-info" id="selection-info"></div>
+        </div>
+    </div>
+    
+    <!-- Modern selection status bar -->
+    <div class="selection-status-bar" id="selection-status-bar">
+        <div class="selection-info" id="selection-info-text">0 characters selected</div>
+        <div class="selection-actions">
+            <button class="selection-action-btn" id="selection-copy">Copy</button>
+            <button class="selection-action-btn" id="selection-save">Save</button>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        // Elements
+        const originalTextEl = document.getElementById('original-text');
+        const translatedTextEl = document.getElementById('translated-text');
+        const copyBtn = document.getElementById('copy-btn');
+        const copyOriginalBtn = document.getElementById('copy-original-btn');
+        const copyTranslationBtn = document.getElementById('copy-translation-btn');
+        const pinBtn = document.getElementById('pin-btn');
+        const pinLabel = pinBtn.querySelector('.pin-label');
+        const debugInfoEl = document.getElementById('debug-info');
+        const contextMenu = document.getElementById('context-menu');
+        const contextCopyBtn = document.getElementById('context-copy');
+        const contextSaveBtn = document.getElementById('context-save');
+        const selectionInfo = document.getElementById('selection-info');
+        const selectionStatusBar = document.getElementById('selection-status-bar');
+        const selectionInfoText = document.getElementById('selection-info-text');
+        const selectionCopyBtn = document.getElementById('selection-copy');
+        const selectionSaveBtn = document.getElementById('selection-save');
+        
+        // Apply dark mode by default
+        document.documentElement.setAttribute('data-theme', 'dark');
+        
+        // Pin state
+        let isPinned = false;
+        
+        // Current selected text info
+        let selectedText = '';
+        let currentTextContainer = null;
+        
+        // Text selection handler
+        function handleTextSelection(event) {
+            const selection = window.getSelection();
+            selectedText = selection.toString().trim();
+            
+            if (selectedText) {
+                // Show selection status bar with character count
+                const selectionLength = selectedText.length;
+                selectionInfoText.textContent = `${selectionLength} characters selected`;
+                selectionStatusBar.classList.add('active');
+                
+                // Store the current text container
+                currentTextContainer = event.target.closest('.text-container');
+            } else {
+                // Hide selection status bar if no text is selected
+                selectionStatusBar.classList.remove('active');
+                currentTextContainer = null;
+            }
+        }
+        
+        // Listen for text selection events on both text containers
+        originalTextEl.addEventListener('mouseup', handleTextSelection);
+        translatedTextEl.addEventListener('mouseup', handleTextSelection);
+        
+        // Selection Copy button
+        selectionCopyBtn.addEventListener('click', () => {
+            if (selectedText) {
+                require('electron').clipboard.writeText(selectedText);
+                selectionInfoText.textContent = 'Copied to clipboard!';
+                
+                // Reset after a delay
+                setTimeout(() => {
+                    selectionStatusBar.classList.remove('active');
+                }, 1500);
+            }
+        });
+        
+        // Selection Save button
+        selectionSaveBtn.addEventListener('click', () => {
+            if (selectedText) {
+                selectionInfoText.textContent = 'Save functionality coming soon';
+                
+                // Reset after a delay
+                setTimeout(() => {
+                    selectionStatusBar.classList.remove('active');
+                }, 1500);
+                
+                // Log to console for now
+                console.log('Save requested for text:', selectedText);
+            }
+        });
+        
+        // Context menu handler
+        document.addEventListener('contextmenu', (event) => {
+            const targetEl = event.target.closest('.text-container');
+            if (targetEl && window.getSelection().toString().trim()) {
+                event.preventDefault();
+                
+                // Position the context menu at the cursor position
+                contextMenu.style.display = 'block';
+                contextMenu.style.top = `${event.clientY}px`;
+                contextMenu.style.left = `${event.clientX}px`;
+                
+                // Ensure the menu stays within the window
+                const menuRect = contextMenu.getBoundingClientRect();
+                if (menuRect.right > window.innerWidth) {
+                    contextMenu.style.left = `${window.innerWidth - menuRect.width - 10}px`;
+                }
+                if (menuRect.bottom > window.innerHeight) {
+                    contextMenu.style.top = `${window.innerHeight - menuRect.height - 10}px`;
+                }
+            }
+        });
+        
+        // Hide context menu when clicking elsewhere
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('#context-menu')) {
+                contextMenu.style.display = 'none';
+            }
+        });
+        
+        // Context menu copy button
+        contextCopyBtn.addEventListener('click', () => {
+            if (selectedText) {
+                require('electron').clipboard.writeText(selectedText);
+                contextMenu.style.display = 'none';
+                
+                // Show feedback in the status bar
+                selectionInfoText.textContent = 'Copied to clipboard!';
+                selectionStatusBar.classList.add('active');
+                
+                // Hide after a delay
+                setTimeout(() => {
+                    selectionStatusBar.classList.remove('active');
+                }, 1500);
+            }
+        });
+        
+        // Context menu save button
+        contextSaveBtn.addEventListener('click', () => {
+            if (selectedText) {
+                contextMenu.style.display = 'none';
+                
+                // Show feedback in the status bar
+                selectionInfoText.textContent = 'Save functionality coming soon';
+                selectionStatusBar.classList.add('active');
+                
+                // Hide after a delay
+                setTimeout(() => {
+                    selectionStatusBar.classList.remove('active');
+                }, 1500);
+                
+                // Log to console for now
+                console.log('Save requested for text:', selectedText);
+            }
+        });
+        
+        // Handle keyboard shortcuts for selection
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+C or Cmd+C to copy selected text
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+                if (selectedText && currentTextContainer) {
+                    // The browser's default copy behavior will handle this,
+                    // but we can show feedback
+                    selectionInfoText.textContent = 'Copied to clipboard!';
+                    selectionStatusBar.classList.add('active');
+                    
+                    // Hide after a delay
+                    setTimeout(() => {
+                        selectionStatusBar.classList.remove('active');
+                    }, 1500);
+                }
+            }
+            
+            // Escape key to hide context menu and selection bar
+            if (e.key === 'Escape') {
+                contextMenu.style.display = 'none';
+                selectionStatusBar.classList.remove('active');
+            }
+
+            // F12 for debug mode
+            if (e.key === 'F12') {
+                isDebugMode = !isDebugMode;
+                debugInfoEl.style.display = isDebugMode ? 'block' : 'none';
+            }
+        });
+        
+        // Toggle pin state
+        pinBtn.addEventListener('click', () => {
+            isPinned = !isPinned;
+            if (isPinned) {
+                pinBtn.classList.add('pinned');
+                pinLabel.textContent = 'Unpin';
+                // Tell main process to set the window as always on top
+                ipcRenderer.send('set-always-on-top', true);
+            } else {
+                pinBtn.classList.remove('pinned');
+                pinLabel.textContent = 'Pin';
+                // Tell main process to unset the always on top flag
+                ipcRenderer.send('set-always-on-top', false);
+            }
+        });
+        
+        // Apply dark mode
+        function applyDarkMode(isDark) {
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        }
+        
+        // Listen for dark mode changes
+        ipcRenderer.on('set-dark-mode', (event, isDark) => {
+            applyDarkMode(isDark);
+        });
+        
+        // Toggle debug info (hidden by default)
+        let isDebugMode = false;
+        
+        // Helper function to log and show debug info
+        function logDebug(message) {
+            console.log(message);
+            if (isDebugMode) {
+                const time = new Date().toLocaleTimeString();
+                debugInfoEl.innerHTML += `<div>[${time}] ${message}</div>`;
+                debugInfoEl.scrollTop = debugInfoEl.scrollHeight;
+            }
+        }
+        
+        // When translation starts
+        ipcRenderer.on('start-translation', (event, data) => {
+            logDebug(`Received start-translation event with data: ${JSON.stringify(data)}`);
+            
+            if (data && data.text) {
+                originalTextEl.textContent = data.text;
+                logDebug(`Set original text (${data.text.length} chars)`);
+            } else {
+                originalTextEl.textContent = "No text provided";
+                logDebug("No text data provided");
+            }
+            
+            translatedTextEl.innerHTML = '<span class="loader"></span>';
+        });
+        
+        // When translation is complete
+        ipcRenderer.on('translation-complete', (event, data) => {
+            logDebug(`Received translation-complete event with data: ${JSON.stringify(data)}`);
+            
+            if (data && data.translatedText) {
+                translatedTextEl.textContent = data.translatedText;
+                logDebug(`Set translated text (${data.translatedText.length} chars)`);
+                
+                // محاسبه ارتفاع محتوا و تنظیم اندازه پنجره
+                setTimeout(() => {
+                    adjustWindowSize();
+                }, 100);
+            } else {
+                translatedTextEl.textContent = "Translation failed - no result received";
+                logDebug("No translation data received");
+            }
+        });
+        
+        // تنظیم اندازه پنجره بر اساس محتوا
+        function adjustWindowSize() {
+            const originalTextHeight = originalTextEl.scrollHeight;
+            const translatedTextHeight = translatedTextEl.scrollHeight;
+            
+            // محاسبه ارتفاع کل محتوا
+            const contentHeight = originalTextHeight + translatedTextHeight;
+            
+            logDebug(`Original text height: ${originalTextHeight}px, Translated text height: ${translatedTextHeight}px, Total: ${contentHeight}px`);
+            
+            // ارسال اطلاعات ارتفاع به پروسه اصلی
+            ipcRenderer.send('resize-translation-window', { contentHeight });
+        }
+        
+        // When translation fails
+        ipcRenderer.on('translation-error', (event, data) => {
+            logDebug(`Translation error: ${JSON.stringify(data)}`);
+            translatedTextEl.textContent = `Error: ${data.error || 'Unknown error'}`;
+        });
+        
+        // Copy translation to clipboard
+        copyBtn.addEventListener('click', () => {
+            require('electron').clipboard.writeText(translatedTextEl.textContent);
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => {
+                copyBtn.textContent = 'Copy Translation';
+            }, 2000);
+        });
+        
+        // Copy original text to clipboard
+        copyOriginalBtn.addEventListener('click', () => {
+            require('electron').clipboard.writeText(originalTextEl.textContent);
+            copyOriginalBtn.textContent = 'Copied';
+            setTimeout(() => {
+                copyOriginalBtn.textContent = 'Copy';
+            }, 2000);
+        });
+        
+        // Copy translated text to clipboard
+        copyTranslationBtn.addEventListener('click', () => {
+            require('electron').clipboard.writeText(translatedTextEl.textContent);
+            copyTranslationBtn.textContent = 'Copied';
+            setTimeout(() => {
+                copyTranslationBtn.textContent = 'Copy';
+            }, 2000);
+        });
+        
+        // Check if renderer received all necessary elements
+        window.addEventListener('DOMContentLoaded', () => {
+            logDebug('DOM loaded - checking elements');
+            
+            const elements = {
+                originalTextEl,
+                translatedTextEl,
+                copyBtn,
+                copyOriginalBtn,
+                copyTranslationBtn,
+                pinBtn
+            };
+            
+            for (const [name, element] of Object.entries(elements)) {
+                if (!element) {
+                    console.error(`Element not found: ${name}`);
+                    logDebug(`Element not found: ${name}`);
+                }
+            }
+            
+            logDebug('Renderer initialized and ready');
+            
+            // Tell main process we're ready
+            ipcRenderer.send('renderer-ready');
+        });
+    </script>
+</body>
+</html> 

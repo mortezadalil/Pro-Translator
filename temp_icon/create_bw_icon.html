@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Black and White PT Icon</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        
+        canvas {
+            border: 1px solid #ccc;
+            margin: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px;
+            background-color: #0071e3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #0077ed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>Black and White PT Icon Generator</h3>
+        <div style="display: flex;">
+            <canvas id="iconCanvas" width="16" height="16"></canvas>
+            <canvas id="iconCanvasLarge" width="64" height="64"></canvas>
+        </div>
+        <div class="controls">
+            <button id="generateButton">Generate BW Icon</button>
+            <a id="downloadLink" style="display: none;">Download Icon</a>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('iconCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const canvasLarge = document.getElementById('iconCanvasLarge');
+            const ctxLarge = canvasLarge.getContext('2d');
+            
+            function drawIcon(context, size) {
+                // Clear canvas
+                context.clearRect(0, 0, size, size);
+                
+                // Draw background (black)
+                context.fillStyle = 'black';
+                context.fillRect(0, 0, size, size);
+                
+                // Draw PT text in white
+                context.fillStyle = 'white';
+                context.font = `bold ${Math.floor(size * 0.65)}px Arial`;
+                context.textAlign = 'center';
+                context.textBaseline = 'middle';
+                context.fillText('PT', size/2, size/2);
+            }
+            
+            // Initial draw
+            drawIcon(ctx, 16);
+            drawIcon(ctxLarge, 64);
+            
+            // Generate and download the icon
+            document.getElementById('generateButton').addEventListener('click', function() {
+                const downloadLink = document.getElementById('downloadLink');
+                downloadLink.style.display = 'block';
+                downloadLink.innerHTML = 'Right-click on icon and Save Image As...';
+                
+                // You can also set up automatic download if browser supports it
+                // However, this simple approach is to manually save the image
+                // and then convert it to .ico format using a converter tool
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Pro Translator</title>
+    <link rel="stylesheet" href="./assets/fonts/vazir-font.css">
+    <style>
+        body {
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', 'Lucida Grande', sans-serif;
+            padding: 20px;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            text-align: center;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .logo {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 10px;
+            display: block;
+        }
+        h1 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        .version {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .description {
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        .usage {
+            text-align: left;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+            padding: 10px 15px;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .usage h2 {
+            font-size: 16px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .shortcut {
+            display: inline-block;
+            background-color: #eee;
+            border-radius: 3px;
+            padding: 2px 5px;
+            font-family: monospace;
+        }
+        .links {
+            margin-top: 20px;
+        }
+        .link {
+            color: #007AFF;
+            text-decoration: none;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+        .note {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+        }
+        .note h3 {
+            font-size: 16px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .note p {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <img src="./assets/icon.png" class="logo" alt="Pro Translator Logo">
+    <h1>Pro Translator</h1>
+    <div class="version">Version 1.0.0</div>
+    
+    <div class="description">
+        A macOS menu bar app that translates selected text to your preferred language using OpenRouter API.
+    </div>
+
+    
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        document.getElementById('website-link').addEventListener('click', () => {
+            ipcRenderer.send('open-external-link', 'https://example.com');
+        });
+        
+        document.getElementById('support-link').addEventListener('click', () => {
+            ipcRenderer.send('open-external-link', 'mailto:support@example.com');
+        });
+    </script>
+</body>
+</html> 

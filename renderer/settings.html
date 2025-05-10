@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Translator Settings</title>
+    <link rel="stylesheet" href="./assets/fonts/vazir-font.css">
+    <style>
+        :root {
+            --bg-color: #f5f5f7;
+            --window-bg: rgba(255, 255, 255, 0.9);
+            --text-color: #1d1d1f;
+            --border-color: #e2e2e7;
+            --input-bg: #ffffff;
+            --caption-color: #86868b;
+            --primary-color: #0071e3;
+            --primary-hover: #0077ed;
+            --primary-active: #0068d1;
+            --secondary-bg: #e2e2e7;
+            --secondary-hover: #d6d6dc;
+            --secondary-active: #c9c9d0;
+            --success-color: #29a644;
+        }
+        
+        [data-theme="dark"] {
+            --bg-color: #1e1e1e;
+            --window-bg: rgba(30, 30, 30, 0.95);
+            --text-color: #f5f5f7;
+            --border-color: #3d3d3d;
+            --input-bg: #2d2d2d;
+            --caption-color: #a1a1a6;
+            --primary-color: #0a84ff;
+            --primary-hover: #409cff;
+            --primary-active: #0060d3;
+            --secondary-bg: #3d3d3d;
+            --secondary-hover: #4d4d4d;
+            --secondary-active: #5d5d5d;
+            --success-color: #30d158;
+        }
+        
+        body {
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', 'Lucida Grande', sans-serif;
+            padding: 0;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 13px;
+            line-height: 1.4;
+            overflow-x: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .mac-window {
+            background-color: var(--window-bg);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            max-width: 450px;
+            margin: 0 auto;
+            transition: background-color 0.3s;
+        }
+        
+        h1 {
+            font-size: 18px;
+            font-weight: 500;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--text-color);
+            text-align: center;
+        }
+        
+        .setting-group {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        
+        .setting-group:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        
+        .setting-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--text-color);
+        }
+        
+        input[type="text"], select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            box-sizing: border-box;
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            font-size: 13px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+        
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 10px;
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            outline: none;
+            transition: all 0.2s;
+            position: relative;
+            background-color: var(--input-bg);
+        }
+        
+        input[type="checkbox"]:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 2px;
+            width: 4px;
+            height: 9px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        input[type="checkbox"]:focus {
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+        }
+        
+        .shortcut-container {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background-color: var(--input-bg);
+        }
+        
+        .shortcut-display {
+            flex: 1;
+            margin-right: 10px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'Vazirmatn', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            font-size: 13px;
+        }
+        
+        .shortcut-button {
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
+            border: none;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'Vazirmatn', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            transition: background-color 0.2s;
+        }
+        
+        .shortcut-button:hover {
+            background-color: var(--secondary-hover);
+        }
+        
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 24px;
+        }
+        
+        .save-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            transition: background-color 0.2s;
+            min-width: 120px;
+        }
+        
+        .save-button:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .save-button:active {
+            background-color: var(--primary-active);
+        }
+        
+        .success-message {
+            color: var(--success-color);
+            margin-top: 10px;
+            text-align: center;
+            font-size: 13px;
+            display: none;
+        }
+        
+        .caption {
+            font-size: 11px;
+            color: var(--caption-color);
+            margin-top: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .api-key-container {
+            display: flex;
+            width: 100%;
+            align-items: center;
+        }
+        
+        .api-key-container input {
+            flex: 1;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            margin-bottom: 0;
+            height: 35px;
+            box-sizing: border-box;
+        }
+        
+        .paste-button {
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-left: none;
+            padding: 0 12px;
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            height: 35px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .paste-button:hover {
+            background-color: var(--secondary-hover);
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            transition: background-color 0.2s;
+        }
+    </style>
+</head>
+<body>
+    <div class="mac-window">
+        <h1>Pro Translator Settings</h1>
+        
+        <div class="setting-group">
+            <label class="setting-label" for="api-key">OpenRouter API Key</label>
+            <div class="api-key-container">
+                <input type="text" id="api-key" placeholder="Enter your API key">
+                <button class="paste-button" id="paste-api-key">Paste</button>
+            </div>
+            <div class="caption">Get your API key from openrouter.ai</div>
+        </div>
+        
+        <div class="setting-group">
+            <label class="setting-label" for="language-model">Language Model</label>
+            <input type="text" id="language-model" placeholder="Enter model ID (e.g. anthropic/claude-3.7-sonnet)">
+            <div class="caption">Model ID from OpenRouter (e.g. anthropic/claude-3.7-sonnet, anthropic/claude-3-opus, meta-llama/llama-3-70b-instruct)</div>
+        </div>
+        
+        <div class="setting-group">
+            <label class="setting-label" for="target-language">Target Language</label>
+            <select id="target-language">
+                <option value="persian">Persian</option>
+                <option value="english">English</option>
+                <option value="arabic">Arabic</option>
+                <option value="chinese">Chinese</option>
+                <option value="french">French</option>
+                <option value="german">German</option>
+                <option value="italian">Italian</option>
+                <option value="japanese">Japanese</option>
+                <option value="korean">Korean</option>
+                <option value="russian">Russian</option>
+                <option value="spanish">Spanish</option>
+            </select>
+        </div>
+        
+        <div class="setting-group">
+            <label class="setting-label">Keyboard Shortcut</label>
+            <div class="shortcut-container">
+                <div class="shortcut-display" id="shortcut-display">Command+Shift+A</div>
+                <button class="shortcut-button" id="change-shortcut">Change</button>
+            </div>
+            <div class="caption">Select text and press this shortcut to translate</div>
+        </div>
+        
+        <div class="setting-group">
+            <div class="checkbox-container">
+                <input type="checkbox" id="use-direct-connection">
+                <label for="use-direct-connection">Use Direct IP Connection</label>
+            </div>
+            <div class="caption">Use a direct connection to OpenRouter API</div>
+        </div>
+        
+        <div class="setting-group">
+            <div class="checkbox-container">
+                <input type="checkbox" id="dark-mode">
+                <label for="dark-mode">Dark Mode</label>
+            </div>
+            <div class="caption">Enable dark mode for the application</div>
+        </div>
+        
+        <div class="setting-group">
+            <div class="checkbox-container">
+                <input type="checkbox" id="run-at-startup">
+                <label for="run-at-startup">Run at Startup</label>
+            </div>
+            <div class="caption">Automatically start Pro Translator when you log in</div>
+        </div>
+        
+        <div class="button-container">
+            <button class="save-button" id="save-button">Save Settings</button>
+        </div>
+        
+        <div class="success-message" id="success-message">Settings saved successfully!</div>
+    </div>
+    
+    <script>
+        const { ipcRenderer, clipboard } = require('electron');
+        
+        // Elements
+        const apiKeyInput = document.getElementById('api-key');
+        const pasteApiKeyBtn = document.getElementById('paste-api-key');
+        const languageModelInput = document.getElementById('language-model');
+        const targetLanguageSelect = document.getElementById('target-language');
+        const shortcutDisplay = document.getElementById('shortcut-display');
+        const changeShortcutBtn = document.getElementById('change-shortcut');
+        const useDirectConnectionCheckbox = document.getElementById('use-direct-connection');
+        const darkModeCheckbox = document.getElementById('dark-mode');
+        const runAtStartupCheckbox = document.getElementById('run-at-startup');
+        const saveButton = document.getElementById('save-button');
+        const successMessage = document.getElementById('success-message');
+        
+        // Variables to store the current shortcut
+        let currentShortcut = {
+            modifiers: ['CommandOrControl', 'Shift'],
+            key: 'A'
+        };
+        
+        // Apply dark mode
+        function applyDarkMode(isDark) {
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        }
+        
+        // Listen for dark mode changes
+        ipcRenderer.on('set-dark-mode', (event, isDark) => {
+            applyDarkMode(isDark);
+        });
+        
+        // Toggle dark mode immediately when checkbox is clicked
+        darkModeCheckbox.addEventListener('change', (e) => {
+            applyDarkMode(e.target.checked);
+        });
+        
+        // Request current settings from main process
+        ipcRenderer.send('get-settings');
+        
+        // Receive settings from main process
+        ipcRenderer.on('settings-data', (event, settings) => {
+            apiKeyInput.value = settings.apiKey || '';
+            languageModelInput.value = settings.languageModel || '';
+            targetLanguageSelect.value = settings.targetLanguage || 'persian';
+            useDirectConnectionCheckbox.checked = settings.useDirectIPConnection || false;
+            darkModeCheckbox.checked = settings.darkMode || false;
+            runAtStartupCheckbox.checked = settings.runAtStartup || false;
+            
+            // Apply dark mode based on saved setting
+            applyDarkMode(settings.darkMode || false);
+            
+            if (settings.keyboardShortcut) {
+                currentShortcut = settings.keyboardShortcut;
+                updateShortcutDisplay();
+            }
+        });
+        
+        // Update the shortcut display
+        function updateShortcutDisplay() {
+            let displayText = '';
+            if (currentShortcut.modifiers.includes('CommandOrControl')) displayText += 'Command+';
+            if (currentShortcut.modifiers.includes('Control')) displayText += 'Control+';
+            if (currentShortcut.modifiers.includes('Option')) displayText += 'Option+';
+            if (currentShortcut.modifiers.includes('Shift')) displayText += 'Shift+';
+            displayText += currentShortcut.key;
+            
+            shortcutDisplay.textContent = displayText;
+        }
+        
+        // Handle change shortcut button click
+        let isListeningForShortcut = false;
+        changeShortcutBtn.addEventListener('click', () => {
+            if (isListeningForShortcut) return;
+            
+            isListeningForShortcut = true;
+            changeShortcutBtn.textContent = "Listening...";
+            shortcutDisplay.textContent = 'Press keys...';
+            
+            // Listen for keydown events
+            const handleKeyDown = (e) => {
+                e.preventDefault();
+                
+                const modifiers = [];
+                if (e.metaKey) modifiers.push('CommandOrControl');
+                if (e.ctrlKey && !e.metaKey) modifiers.push('Control');
+                if (e.altKey) modifiers.push('Option');
+                if (e.shiftKey) modifiers.push('Shift');
+                
+                // Get the key, convert special keys to proper format
+                let key = e.key;
+                if (key === ' ') key = 'Space';
+                else if (key.length === 1) key = key.toUpperCase();
+                else if (key === 'ArrowUp') key = 'Up';
+                else if (key === 'ArrowDown') key = 'Down';
+                else if (key === 'ArrowLeft') key = 'Left';
+                else if (key === 'ArrowRight') key = 'Right';
+                
+                // Only accept if at least one modifier is used and a valid key is pressed
+                if (modifiers.length > 0 && key && key !== 'Meta' && key !== 'Control' && key !== 'Alt' && key !== 'Shift') {
+                    currentShortcut = {
+                        modifiers: modifiers,
+                        key: key
+                    };
+                    
+                    updateShortcutDisplay();
+                    isListeningForShortcut = false;
+                    changeShortcutBtn.textContent = "Change";
+                    document.removeEventListener('keydown', handleKeyDown);
+                }
+            };
+            
+            document.addEventListener('keydown', handleKeyDown);
+            
+            // Timeout to cancel listening after 5 seconds
+            setTimeout(() => {
+                if (isListeningForShortcut) {
+                    isListeningForShortcut = false;
+                    changeShortcutBtn.textContent = "Change";
+                    updateShortcutDisplay();
+                    document.removeEventListener('keydown', handleKeyDown);
+                }
+            }, 5000);
+        });
+        
+        // Handle save button click
+        saveButton.addEventListener('click', () => {
+            const newSettings = {
+                apiKey: apiKeyInput.value,
+                languageModel: languageModelInput.value,
+                targetLanguage: targetLanguageSelect.value,
+                keyboardShortcut: currentShortcut,
+                useDirectIPConnection: useDirectConnectionCheckbox.checked,
+                darkMode: darkModeCheckbox.checked,
+                runAtStartup: runAtStartupCheckbox.checked
+            };
+            
+            // Send settings to main process
+            ipcRenderer.send('save-settings', newSettings);
+        });
+        
+        // Handle settings saved confirmation
+        ipcRenderer.on('settings-saved', () => {
+            successMessage.style.display = 'block';
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 3000);
+        });
+        
+        // Handle paste button click
+        pasteApiKeyBtn.addEventListener('click', () => {
+            const clipboardText = clipboard.readText();
+            if (clipboardText) {
+                apiKeyInput.value = clipboardText.trim();
+            }
+        });
+        
+        // Enable regular paste functionality
+        apiKeyInput.addEventListener('paste', (e) => {
+            // Allow the default paste behavior
+            // This is redundant but ensures paste works
+        });
+    </script>
+</body>
+</html> 

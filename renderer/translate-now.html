@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translate Now</title>
+    <link rel="stylesheet" href="./assets/fonts/vazir-font.css">
+    <style>
+        :root {
+            --bg-color: #f5f5f7;
+            --window-bg: rgba(255, 255, 255, 0.9);
+            --text-color: #1d1d1f;
+            --border-color: #e2e2e7;
+            --input-bg: #ffffff;
+            --caption-color: #86868b;
+            --primary-color: #0071e3;
+            --primary-hover: #0077ed;
+            --primary-active: #0068d1;
+            --secondary-bg: #e2e2e7;
+            --secondary-hover: #d6d6dc;
+            --secondary-active: #c9c9d0;
+            --debug-bg: #f5f5f7;
+            --divider-color: #e2e2e7;
+        }
+        
+        [data-theme="dark"] {
+            --bg-color: #1e1e1e;
+            --window-bg: rgba(30, 30, 30, 0.95);
+            --text-color: #f5f5f7;
+            --border-color: #3d3d3d;
+            --input-bg: #2d2d2d;
+            --caption-color: #a1a1a6;
+            --primary-color: #0a84ff;
+            --primary-hover: #409cff;
+            --primary-active: #0060d3;
+            --secondary-bg: #3d3d3d;
+            --secondary-hover: #4d4d4d;
+            --secondary-active: #5d5d5d;
+            --debug-bg: #2d2d2d;
+            --divider-color: #3d3d3d;
+        }
+        
+        body {
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', 'Lucida Grande', sans-serif;
+            padding: 0;
+            margin: 0;
+            user-select: text;
+            overflow-y: auto;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 13px;
+            line-height: 1.4;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .translate-container {
+            background-color: var(--window-bg);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            flex: 1;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s;
+            overflow: hidden;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        
+        .language-selector {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        select {
+            width: 180px;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            font-size: 14px;
+            outline: none;
+        }
+        
+        select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+        }
+        
+        .translation-area {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            overflow: hidden;
+        }
+        
+        .text-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .text-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+        
+        textarea {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+        }
+        
+        textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        button:active {
+            background-color: var(--primary-active);
+        }
+        
+        .translated[dir="rtl"] {
+            direction: rtl;
+            text-align: right;
+        }
+        
+        .loader {
+            display: inline-block;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .rtl-languages {
+            text-align: right;
+            direction: rtl;
+        }
+        
+        .right-textarea {
+            direction: rtl;
+            text-align: right;
+            font-family: 'Vazirmatn', 'Tahoma', 'Segoe UI', 'Arial', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="translate-container">
+        <div class="header">
+            <div class="title">Pro Translator</div>
+        </div>
+        
+        <div class="language-selector">
+            <div>
+                <span>From: Auto-detect</span>
+            </div>
+            <div>
+                <span>To: </span>
+                <select id="target-language">
+                    <option value="persian">Persian</option>
+                    <option value="arabic">Arabic</option>
+                    <option value="chinese">Chinese</option>
+                    <option value="french">French</option>
+                    <option value="german">German</option>
+                    <option value="italian">Italian</option>
+                    <option value="japanese">Japanese</option>
+                    <option value="korean">Korean</option>
+                    <option value="russian">Russian</option>
+                    <option value="spanish">Spanish</option>
+                    <option value="english">English</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="translation-area">
+            <div class="text-box">
+                <div class="text-label">Original Text</div>
+                <textarea id="source-text" placeholder="Enter text to translate"></textarea>
+            </div>
+            
+            <div class="text-box">
+                <div class="text-label">Translation</div>
+                <textarea id="translated-text" class="persian-text" readonly placeholder="Translation will appear here"></textarea>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="translate-btn">Translate</button>
+        </div>
+    </div>
+    
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        // Elements
+        const sourceTextEl = document.getElementById('source-text');
+        const translatedTextEl = document.getElementById('translated-text');
+        const targetLanguageSelect = document.getElementById('target-language');
+        const translateBtn = document.getElementById('translate-btn');
+        
+        // Apply dark mode
+        function applyDarkMode(isDark) {
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        }
+        
+        // Listen for dark mode changes
+        ipcRenderer.on('set-dark-mode', (event, isDark) => {
+            applyDarkMode(isDark);
+        });
+        
+        // Check if the target language is RTL
+        function isRTL(language) {
+            return ['persian', 'arabic', 'hebrew', 'urdu'].includes(language);
+        }
+        
+        // Set direction based on language
+        function setDirection() {
+            const language = targetLanguageSelect.value;
+            if (isRTL(language)) {
+                translatedTextEl.classList.add('rtl-languages');
+            } else {
+                translatedTextEl.classList.remove('rtl-languages');
+            }
+        }
+        
+        // Translation process
+        function performTranslation() {
+            const sourceText = sourceTextEl.value.trim();
+            if (!sourceText) return;
+            
+            // Show loading state
+            translatedTextEl.value = "";
+            const loadingSpinner = document.createElement('div');
+            loadingSpinner.className = 'loader';
+            loadingSpinner.style.position = 'absolute';
+            loadingSpinner.style.top = '50%';
+            loadingSpinner.style.left = '50%';
+            loadingSpinner.style.transform = 'translate(-50%, -50%)';
+            translatedTextEl.parentNode.style.position = 'relative';
+            translatedTextEl.parentNode.appendChild(loadingSpinner);
+            
+            // Send to main process for translation
+            ipcRenderer.send('perform-direct-translation', {
+                text: sourceText,
+                targetLanguage: targetLanguageSelect.value
+            });
+        }
+        
+        // Listen for translation result
+        ipcRenderer.on('direct-translation-complete', (event, data) => {
+            // Remove loading spinner
+            const loadingSpinner = translatedTextEl.parentNode.querySelector('.loader');
+            if (loadingSpinner) {
+                loadingSpinner.remove();
+            }
+            
+            if (data && data.translatedText) {
+                translatedTextEl.value = data.translatedText;
+            } else {
+                translatedTextEl.value = "Translation failed";
+            }
+        });
+        
+        // Listen for translation error
+        ipcRenderer.on('direct-translation-error', (event, data) => {
+            // Remove loading spinner
+            const loadingSpinner = translatedTextEl.parentNode.querySelector('.loader');
+            if (loadingSpinner) {
+                loadingSpinner.remove();
+            }
+            
+            translatedTextEl.value = `Error: ${data.error || 'Unknown error'}`;
+        });
+        
+        // Settings from main process
+        ipcRenderer.on('load-settings', (event, settings) => {
+            if (settings.targetLanguage) {
+                targetLanguageSelect.value = settings.targetLanguage;
+                setDirection();
+            }
+            
+            // Apply dark mode
+            applyDarkMode(settings.darkMode || false);
+        });
+        
+        // Event listeners
+        window.addEventListener('DOMContentLoaded', () => {
+            // Request settings
+            ipcRenderer.send('get-settings');
+            
+            // Set initial direction
+            setDirection();
+        });
+        
+        // Translate button
+        translateBtn.addEventListener('click', performTranslation);
+        
+        // Language change
+        targetLanguageSelect.addEventListener('change', setDirection);
+        
+        // Enter key in source text
+        sourceTextEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                performTranslation();
+            }
+        });
+    </script>
+</body>
+</html> 
