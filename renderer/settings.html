@@ -264,6 +264,10 @@
             background-color: var(--secondary-hover);
         }
         
+        .paste-button:active {
+            background-color: var(--secondary-active);
+        }
+        
         button {
             background-color: var(--primary-color);
             color: white;
@@ -275,6 +279,32 @@
             font-weight: 500;
             font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', sans-serif;
             transition: background-color 0.2s;
+        }
+        
+        .log-path-container {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .log-path-container input {
+            flex: 1;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            margin-bottom: 0;
+            height: 35px;
+            box-sizing: border-box;
+            background-color: var(--secondary-bg);
+            color: var(--caption-color);
+            font-size: 11px;
+        }
+        
+        .log-path-container button {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            height: 35px;
+            box-sizing: border-box;
         }
     </style>
 </head>
@@ -324,6 +354,15 @@
         </div>
         
         <div class="setting-group">
+            <label class="setting-label">Language Tools Shortcut</label>
+            <div class="shortcut-container">
+                <div class="shortcut-display" id="language-tools-shortcut-display">Command+Shift+L</div>
+                <button class="shortcut-button" id="change-language-tools-shortcut">Change</button>
+            </div>
+            <div class="caption">Press this shortcut to open Language Tools</div>
+        </div>
+        
+        <div class="setting-group">
             <div class="checkbox-container">
                 <input type="checkbox" id="use-direct-connection">
                 <label for="use-direct-connection">Use Direct IP Connection</label>
@@ -347,6 +386,17 @@
             <div class="caption">Automatically start Pro Translator when you log in</div>
         </div>
         
+        <div class="setting-group">
+            <div class="setting-label">Troubleshooting</div>
+            <div class="caption">If the application crashes or has issues, please send the log file to:</div>
+            <div class="caption"><strong>mortezadalil@gmail.com</strong></div>
+            <div class="log-path-container">
+                <input type="text" id="log-path" readonly>
+                <button id="open-log-folder" class="shortcut-button">Open Folder</button>
+            </div>
+            <div class="caption">Log file contains diagnostic information that helps fix issues.</div>
+        </div>
+        
         <div class="button-container">
             <button class="save-button" id="save-button">Save Settings</button>
         </div>
@@ -364,16 +414,25 @@
         const targetLanguageSelect = document.getElementById('target-language');
         const shortcutDisplay = document.getElementById('shortcut-display');
         const changeShortcutBtn = document.getElementById('change-shortcut');
+        const languageToolsShortcutDisplay = document.getElementById('language-tools-shortcut-display');
+        const changeLanguageToolsShortcutBtn = document.getElementById('change-language-tools-shortcut');
         const useDirectConnectionCheckbox = document.getElementById('use-direct-connection');
         const darkModeCheckbox = document.getElementById('dark-mode');
         const runAtStartupCheckbox = document.getElementById('run-at-startup');
+        const logPathInput = document.getElementById('log-path');
+        const openLogFolderBtn = document.getElementById('open-log-folder');
         const saveButton = document.getElementById('save-button');
         const successMessage = document.getElementById('success-message');
         
-        // Variables to store the current shortcut
+        // Variables to store the current shortcuts
         let currentShortcut = {
             modifiers: ['CommandOrControl', 'Shift'],
             key: 'A'
+        };
+        
+        let languageToolsShortcut = {
+            modifiers: ['CommandOrControl', 'Shift'],
+            key: 'L'
         };
         
         // Apply dark mode
@@ -410,6 +469,22 @@
                 currentShortcut = settings.keyboardShortcut;
                 updateShortcutDisplay();
             }
+            
+            if (settings.languageToolsShortcut) {
+                languageToolsShortcut = settings.languageToolsShortcut;
+                updateLanguageToolsShortcutDisplay();
+            }
+            
+            // Get and display log file path
+            const logFilePath = ipcRenderer.sendSync('get-log-file-path');
+            logPathInput.value = logFilePath;
+            
+            // Setup open log folder button
+            openLogFolderBtn.addEventListener('click', () => {
+                const { shell } = require('electron');
+                // Open the containing folder and select the file
+                shell.showItemInFolder(logFilePath);
+            });
         });
         
         // Update the shortcut display
@@ -424,14 +499,41 @@
             shortcutDisplay.textContent = displayText;
         }
         
+        // Update the Language Tools shortcut display
+        function updateLanguageToolsShortcutDisplay() {
+            let displayText = '';
+            if (languageToolsShortcut.modifiers.includes('CommandOrControl')) displayText += 'Command+';
+            if (languageToolsShortcut.modifiers.includes('Control')) displayText += 'Control+';
+            if (languageToolsShortcut.modifiers.includes('Option')) displayText += 'Option+';
+            if (languageToolsShortcut.modifiers.includes('Shift')) displayText += 'Shift+';
+            displayText += languageToolsShortcut.key;
+            
+            languageToolsShortcutDisplay.textContent = displayText;
+        }
+        
         // Handle change shortcut button click
         let isListeningForShortcut = false;
+        
         changeShortcutBtn.addEventListener('click', () => {
+            listenForShortcut(shortcutDisplay, changeShortcutBtn, (newShortcut) => {
+                currentShortcut = newShortcut;
+                updateShortcutDisplay();
+            });
+        });
+        
+        changeLanguageToolsShortcutBtn.addEventListener('click', () => {
+            listenForShortcut(languageToolsShortcutDisplay, changeLanguageToolsShortcutBtn, (newShortcut) => {
+                languageToolsShortcut = newShortcut;
+                updateLanguageToolsShortcutDisplay();
+            });
+        });
+        
+        function listenForShortcut(display, button, callback) {
             if (isListeningForShortcut) return;
             
             isListeningForShortcut = true;
-            changeShortcutBtn.textContent = "Listening...";
-            shortcutDisplay.textContent = 'Press keys...';
+            button.textContent = "Listening...";
+            display.textContent = 'Press keys...';
             
             // Listen for keydown events
             const handleKeyDown = (e) => {
@@ -454,14 +556,14 @@
                 
                 // Only accept if at least one modifier is used and a valid key is pressed
                 if (modifiers.length > 0 && key && key !== 'Meta' && key !== 'Control' && key !== 'Alt' && key !== 'Shift') {
-                    currentShortcut = {
+                    const newShortcut = {
                         modifiers: modifiers,
                         key: key
                     };
                     
-                    updateShortcutDisplay();
+                    callback(newShortcut);
                     isListeningForShortcut = false;
-                    changeShortcutBtn.textContent = "Change";
+                    button.textContent = "Change";
                     document.removeEventListener('keydown', handleKeyDown);
                 }
             };
@@ -472,12 +574,12 @@
             setTimeout(() => {
                 if (isListeningForShortcut) {
                     isListeningForShortcut = false;
-                    changeShortcutBtn.textContent = "Change";
-                    updateShortcutDisplay();
+                    button.textContent = "Change";
+                    callback === updateShortcutDisplay ? updateShortcutDisplay() : updateLanguageToolsShortcutDisplay();
                     document.removeEventListener('keydown', handleKeyDown);
                 }
             }, 5000);
-        });
+        }
         
         // Handle save button click
         saveButton.addEventListener('click', () => {
@@ -486,6 +588,7 @@
                 languageModel: languageModelInput.value,
                 targetLanguage: targetLanguageSelect.value,
                 keyboardShortcut: currentShortcut,
+                languageToolsShortcut: languageToolsShortcut,
                 useDirectIPConnection: useDirectConnectionCheckbox.checked,
                 darkMode: darkModeCheckbox.checked,
                 runAtStartup: runAtStartupCheckbox.checked
@@ -515,6 +618,40 @@
         apiKeyInput.addEventListener('paste', (e) => {
             // Allow the default paste behavior
             // This is redundant but ensures paste works
+        });
+        
+        // Document ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get settings from main process
+            ipcRenderer.send('get-settings');
+            
+            // Get and display log file path
+            const logFilePath = ipcRenderer.sendSync('get-log-file-path');
+            logPathInput.value = logFilePath;
+            
+            // Setup open log folder button
+            openLogFolderBtn.addEventListener('click', () => {
+                const { shell } = require('electron');
+                // Open the containing folder and select the file
+                shell.showItemInFolder(logFilePath);
+            });
+            
+            // Listen for settings data
+            ipcRenderer.on('settings-data', (event, settings) => {
+                loadSettings(settings);
+            });
+            
+            // Listen for settings saved confirmation
+            ipcRenderer.on('settings-saved', () => {
+                showSavedMessage();
+            });
+        });
+        
+        // Add ESC key listener to close the window
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                ipcRenderer.send('close-window');
+            }
         });
     </script>
 </body>

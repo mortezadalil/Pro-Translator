@@ -124,53 +124,54 @@
             position: relative;
         }
         
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
         .pin-button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            padding: 0;
+            font-size: 16px;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: var(--secondary-bg);
-            color: var(--text-color);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', sans-serif;
-            transition: background-color 0.2s;
-            min-width: 100px;
+            border-radius: 4px;
+            transition: background-color 0.2s, transform 0.3s, color 0.3s;
         }
         
         .pin-button:hover {
-            background-color: var(--secondary-hover);
-        }
-        
-        .pin-button:active {
-            background-color: var(--secondary-active);
+            background-color: var(--secondary-bg);
         }
         
         .pin-button svg {
-            width: 14px;
-            height: 14px;
-            margin-right: 6px;
-            fill: var(--text-color);
+            transition: transform 0.3s ease;
         }
         
         .pin-button.pinned {
-            background-color: var(--primary-color);
-            color: white;
+            color: var(--primary-color);
         }
         
         .pin-button.pinned svg {
-            fill: white;
-        }
-        
-        .pin-button.pinned:hover {
-            background-color: var(--primary-hover);
-        }
-        
-        .pin-button.pinned:active {
-            background-color: var(--primary-active);
+            transform: rotate(-90deg);
         }
         
         .container {
@@ -228,9 +229,14 @@
             font-family: 'Vazirmatn', 'Tahoma', 'Segoe UI', 'Arial', sans-serif;
         }
         
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        
         .buttons {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             padding: 16px 0;
             background-color: var(--window-bg);
             border-top: 1px solid var(--divider-color);
@@ -406,10 +412,39 @@
             white-space: nowrap;
             z-index: 10;
         }
+        
+        /* Add spin animation for refresh button */
+        .pin-button.refreshing svg {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Add spin animation for secondary-button */
+        .secondary-button.refreshing svg {
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
 <body>
     <div class="mac-window">
+        <div class="header">
+            <div class="title">Translation</div>
+            <div class="header-buttons">
+                <button id="refresh-btn" class="pin-button" title="Refresh translation">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                        <path d="M21 3v5h-5"></path>
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                        <path d="M8 16H3v5"></path>
+                    </svg>
+                </button>
+                <button id="pin-btn" class="pin-button" title="Keep window on top">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="17" x2="12" y2="22"></line>
+                        <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
         <div class="container">
             <div class="content-area">
                 <div class="text-section">
@@ -432,13 +467,8 @@
             </div>
             
             <div class="buttons">
-                <button class="pin-button" id="pin-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
-                        <path d="M32 32C32 14.3 46.3 0 64 0H320c17.7 0 32 14.3 32 32s-14.3 32-32 32H290.5l11.4 148.2c36.7 19.9 65.7 53.2 79.5 94.7l1 3c3.3 9.8 1.6 20.5-4.4 28.8s-15.7 13.3-26 13.3H32c-10.3 0-19.9-4.9-26-13.3s-7.7-19.1-4.4-28.8l1-3c13.8-41.5 42.8-74.8 79.5-94.7L93.5 64H64C46.3 64 32 49.7 32 32zM160 384h64v96c0 17.7-14.3 32-32 32s-32-14.3-32-32V384z"/>
-                    </svg>
-                    <span class="pin-label">Pin</span>
-                </button>
-                <button id="copy-btn">Copy Translation</button>
+                <div class="button-group">
+                </div>
             </div>
             
             <div class="debug-info" id="debug-info"></div>
@@ -469,11 +499,10 @@
         // Elements
         const originalTextEl = document.getElementById('original-text');
         const translatedTextEl = document.getElementById('translated-text');
-        const copyBtn = document.getElementById('copy-btn');
+        const refreshBtn = document.getElementById('refresh-btn');
         const copyOriginalBtn = document.getElementById('copy-original-btn');
         const copyTranslationBtn = document.getElementById('copy-translation-btn');
         const pinBtn = document.getElementById('pin-btn');
-        const pinLabel = pinBtn.querySelector('.pin-label');
         const debugInfoEl = document.getElementById('debug-info');
         const contextMenu = document.getElementById('context-menu');
         const contextCopyBtn = document.getElementById('context-copy');
@@ -628,10 +657,13 @@
                 }
             }
             
-            // Escape key to hide context menu and selection bar
+            // Escape key to hide context menu and selection bar or close window
             if (e.key === 'Escape') {
                 contextMenu.style.display = 'none';
                 selectionStatusBar.classList.remove('active');
+                
+                // Send close window message to main process
+                ipcRenderer.send('close-window');
             }
 
             // F12 for debug mode
@@ -646,12 +678,10 @@
             isPinned = !isPinned;
             if (isPinned) {
                 pinBtn.classList.add('pinned');
-                pinLabel.textContent = 'Unpin';
                 // Tell main process to set the window as always on top
                 ipcRenderer.send('set-always-on-top', true);
             } else {
                 pinBtn.classList.remove('pinned');
-                pinLabel.textContent = 'Pin';
                 // Tell main process to unset the always on top flag
                 ipcRenderer.send('set-always-on-top', false);
             }
@@ -703,7 +733,7 @@
                 translatedTextEl.textContent = data.translatedText;
                 logDebug(`Set translated text (${data.translatedText.length} chars)`);
                 
-                // محاسبه ارتفاع محتوا و تنظیم اندازه پنجره
+                // Calculate content height and adjust window size
                 setTimeout(() => {
                     adjustWindowSize();
                 }, 100);
@@ -713,17 +743,17 @@
             }
         });
         
-        // تنظیم اندازه پنجره بر اساس محتوا
+        // Adjust window size based on content
         function adjustWindowSize() {
             const originalTextHeight = originalTextEl.scrollHeight;
             const translatedTextHeight = translatedTextEl.scrollHeight;
             
-            // محاسبه ارتفاع کل محتوا
+            // Calculate total content height
             const contentHeight = originalTextHeight + translatedTextHeight;
             
             logDebug(`Original text height: ${originalTextHeight}px, Translated text height: ${translatedTextHeight}px, Total: ${contentHeight}px`);
             
-            // ارسال اطلاعات ارتفاع به پروسه اصلی
+            // Send height information to main process
             ipcRenderer.send('resize-translation-window', { contentHeight });
         }
         
@@ -733,12 +763,16 @@
             translatedTextEl.textContent = `Error: ${data.error || 'Unknown error'}`;
         });
         
-        // Copy translation to clipboard
-        copyBtn.addEventListener('click', () => {
-            require('electron').clipboard.writeText(translatedTextEl.textContent);
-            copyBtn.textContent = 'Copied!';
+        // Refresh translation
+        refreshBtn.addEventListener('click', () => {
+            // Request fresh translation from main process
+            ipcRenderer.send('refresh-translation');
+            
+            // Add a temporary rotation animation
+            refreshBtn.classList.add('refreshing');
+            
             setTimeout(() => {
-                copyBtn.textContent = 'Copy Translation';
+                refreshBtn.classList.remove('refreshing');
             }, 2000);
         });
         
@@ -767,7 +801,7 @@
             const elements = {
                 originalTextEl,
                 translatedTextEl,
-                copyBtn,
+                refreshBtn,
                 copyOriginalBtn,
                 copyTranslationBtn,
                 pinBtn

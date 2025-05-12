@@ -1,15 +1,19 @@
 # Pro Translator
 
-A powerful menu bar application for macOS and Windows and Linux that allows you to instantly translate selected text using AI language models. Built with Electron.
+A powerful cross-platform application for macOS, Windows, and Linux that allows you to instantly translate selected text and optimize sentences using AI language models. Built with Electron.
+
+**Current Version: 2.0.0**
 
 ![Pro Translator](./assets/screenshot.png)
 
 ## Features
 
 - **Quick Translation**: Translate selected text from any application with a customizable keyboard shortcut
+- **Sentence Optimization**: Improve sentence structure and readability with AI-powered optimization
 - **Support for Multiple Languages**: Translate to Persian, English, and more languages
 - **AI-Powered Translation**: Uses advanced AI models through OpenRouter API
-- **Menu Bar Integration**: Stays in your menu/system tray for easy access
+- **Cross-Platform Support**: Available for macOS, Windows, and Linux
+- **Menu Bar/System Tray Integration**: Stays in your menu bar or system tray for easy access
 - **Text Selection Tools**: Select, copy, and save specific portions of translations
 - **Dark Mode Support**: Seamlessly integrates with your system theme
 - **Multiple Translation Methods**:
@@ -26,9 +30,18 @@ A powerful menu bar application for macOS and Windows and Linux that allows you 
 4. On first launch, you may need to allow accessibility permissions
 
 ### Windows
-1. Download the latest `Pro Translator Setup x.x.x.exe` from the [Releases](https://github.com/yourusername/pro-translator/releases) page
+1. Download the latest `Pro Translator Setup 2.0.0.exe` from the [Releases](https://github.com/yourusername/pro-translator/releases) page
 2. Run the installer and follow the on-screen instructions
 3. Launch Pro Translator from the Start menu
+
+### Linux
+1. Download the latest `.AppImage` or `.deb` file from the [Releases](https://github.com/yourusername/pro-translator/releases) page
+2. For AppImage:
+   - Make the file executable: `chmod +x Pro_Translator-2.0.0.AppImage`
+   - Run the AppImage: `./Pro_Translator-2.0.0.AppImage`
+3. For Debian/Ubuntu:
+   - Install the .deb package: `sudo dpkg -i Pro_Translator-2.0.0.deb`
+   - Launch Pro Translator from your application menu
 
 ## Usage
 
@@ -53,6 +66,13 @@ You can get an API key from [OpenRouter](https://openrouter.ai/).
 3. Enter or paste text in the input field
 4. Choose the target language
 5. Click "Translate"
+
+### Sentence Optimization
+1. Click on the "PT" icon in the menu bar/system tray
+2. Select "Translate Now"
+3. Enter or paste text in the input field
+4. Toggle on the "Optimize Sentence" option
+5. Click "Translate" to get both translation and optimization
 
 ### Text Selection Features
 - Select specific portions of the translated or original text

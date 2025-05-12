@@ -10,10 +10,16 @@
             font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', 'Lucida Grande', sans-serif;
             padding: 20px;
             margin: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: #1e1e1e;
+            color: #ffffff;
             text-align: center;
-            transition: background-color 0.3s, color 0.3s;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            box-sizing: border-box;
         }
         .logo {
             width: 64px;
@@ -24,15 +30,19 @@
         h1 {
             font-size: 18px;
             margin-bottom: 5px;
+            color: #ffffff;
         }
         .version {
             font-size: 14px;
-            color: #666;
+            color: #aaaaaa;
             margin-bottom: 15px;
         }
         .description {
             margin-bottom: 15px;
             line-height: 1.4;
+            max-width: 290px;
+            font-size: 14px;
+            color: #dddddd;
         }
         .usage {
             text-align: left;
@@ -78,27 +88,47 @@
         .note p {
             margin: 0;
         }
+        .content-wrapper {
+            width: 100%;
+            max-width: 290px;
+        }
     </style>
 </head>
 <body>
-    <img src="./assets/icon.png" class="logo" alt="Pro Translator Logo">
-    <h1>Pro Translator</h1>
-    <div class="version">Version 1.0.0</div>
-    
-    <div class="description">
-        A macOS menu bar app that translates selected text to your preferred language using OpenRouter API.
+    <div class="content-wrapper">
+        <img src="./assets/icon.png" class="logo" alt="Pro Translator Logo">
+        <h1>Pro Translator</h1>
+        <div class="version">Version 2.0.0</div>
+        
+        <div class="description">
+            A cross-platform application for macOS, Windows, and Linux that translates selected text to your preferred language and optimizes sentences using OpenRouter API.
+        </div>
     </div>
-
     
     <script>
         const { ipcRenderer } = require('electron');
         
-        document.getElementById('website-link').addEventListener('click', () => {
-            ipcRenderer.send('open-external-link', 'https://example.com');
-        });
+        // Add event listeners if these elements exist
+        const websiteLink = document.getElementById('website-link');
+        const supportLink = document.getElementById('support-link');
         
-        document.getElementById('support-link').addEventListener('click', () => {
-            ipcRenderer.send('open-external-link', 'mailto:support@example.com');
+        if (websiteLink) {
+            websiteLink.addEventListener('click', () => {
+                ipcRenderer.send('open-external-link', 'https://example.com');
+            });
+        }
+        
+        if (supportLink) {
+            supportLink.addEventListener('click', () => {
+                ipcRenderer.send('open-external-link', 'mailto:support@example.com');
+            });
+        }
+        
+        // Listen for ESC key to close window
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                ipcRenderer.send('close-window');
+            }
         });
     </script>
 </body>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Translate Now</title>
+    <title>Language Tools</title>
     <link rel="stylesheet" href="./assets/fonts/vazir-font.css">
     <style>
         :root {
@@ -124,6 +124,28 @@
             font-weight: 500;
             margin-bottom: 8px;
             color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .paste-btn {
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            border: none;
+        }
+        
+        .paste-btn:hover {
+            background-color: var(--secondary-hover);
+        }
+        
+        .language-select-container {
+            margin-top: 10px;
+            margin-bottom: 15px;
         }
         
         textarea {
@@ -140,9 +162,45 @@
             font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', 'SF Pro Text', 'Helvetica Neue', sans-serif;
         }
         
+        #translated-text {
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+        }
+        
+        .result-container {
+            flex: 1;
+            position: relative;
+            overflow: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .rephrasely-keyword {
+            color: #4CAF50; /* Green color for keywords */
+            font-weight: 600;
+        }
+        
+        .rephrasely-colon {
+            color: #F44336; /* Red color for colons */
+            font-weight: 600;
+        }
+        
         textarea:focus {
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+        }
+        
+        /* استایل برای placeholder در textarea نتیجه */
+        #translated-text::placeholder {
+            text-align: left;
+            direction: ltr;
         }
         
         .controls {
@@ -170,6 +228,20 @@
         
         button:active {
             background-color: var(--primary-active);
+        }
+        
+        .secondary-btn {
+            margin-left: 10px;
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
+        }
+        
+        .secondary-btn:hover {
+            background-color: var(--secondary-hover);
+        }
+        
+        .secondary-btn:active {
+            background-color: var(--secondary-active);
         }
         
         .translated[dir="rtl"] {
@@ -204,68 +276,377 @@
             text-align: right;
             font-family: 'Vazirmatn', 'Tahoma', 'Segoe UI', 'Arial', sans-serif;
         }
+        
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .pin-button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            padding: 0;
+            font-size: 16px;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background-color 0.2s, transform 0.3s, color 0.3s;
+        }
+        
+        .pin-button:hover {
+            background-color: var(--secondary-bg);
+        }
+        
+        .pin-button svg {
+            transition: transform 0.3s ease;
+        }
+        
+        .pin-active {
+            color: var(--primary-color);
+        }
+        
+        .pin-active svg {
+            transform: rotate(-90deg);
+        }
+        
+        /* Context menu styles */
+        .context-menu {
+            position: absolute;
+            z-index: 10;
+            background-color: var(--window-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: none;
+            overflow: hidden;
+        }
+        
+        .context-menu-item {
+            padding: 8px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            border-radius: 0;
+        }
+        
+        .context-menu-item:hover {
+            background-color: var(--secondary-hover);
+        }
+        
+        /* Selection status bar */
+        .selection-status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            width: 90%;
+            max-width: 480px;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 16px;
+            font-size: 12px;
+            border-radius: 8px 8px 0 0;
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            z-index: 999;
+            box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
+            height: 24px;
+            margin-bottom: 0;
+        }
+        
+        .selection-status-bar.active {
+            transform: translateX(-50%) translateY(0);
+            opacity: 0.95;
+        }
+        
+        .selection-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .selection-action-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            height: 18px;
+            line-height: 1;
+        }
+        
+        .selection-action-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
 <body>
     <div class="translate-container">
         <div class="header">
-            <div class="title">Pro Translator</div>
+            <div class="title">Language Tools</div>
+            <div class="header-buttons">
+                <button id="pin-button" class="pin-button" title="Keep window on top">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="17" x2="12" y2="22"></line>
+                        <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
         
         <div class="language-selector">
             <div>
                 <span>From: Auto-detect</span>
             </div>
-            <div>
-                <span>To: </span>
-                <select id="target-language">
-                    <option value="persian">Persian</option>
-                    <option value="arabic">Arabic</option>
-                    <option value="chinese">Chinese</option>
-                    <option value="french">French</option>
-                    <option value="german">German</option>
-                    <option value="italian">Italian</option>
-                    <option value="japanese">Japanese</option>
-                    <option value="korean">Korean</option>
-                    <option value="russian">Russian</option>
-                    <option value="spanish">Spanish</option>
-                    <option value="english">English</option>
-                </select>
-            </div>
         </div>
         
         <div class="translation-area">
             <div class="text-box">
-                <div class="text-label">Original Text</div>
+                <div class="text-label">
+                    Original Text
+                    <button id="paste-btn" class="paste-btn">Paste</button>
+                </div>
                 <textarea id="source-text" placeholder="Enter text to translate"></textarea>
+                
+                <div class="language-select-container">
+                    <span>To: </span>
+                    <select id="target-language">
+                        <option value="persian">Persian</option>
+                        <option value="arabic">Arabic</option>
+                        <option value="chinese">Chinese</option>
+                        <option value="french">French</option>
+                        <option value="german">German</option>
+                        <option value="italian">Italian</option>
+                        <option value="japanese">Japanese</option>
+                        <option value="korean">Korean</option>
+                        <option value="russian">Russian</option>
+                        <option value="spanish">Spanish</option>
+                        <option value="english">English</option>
+                    </select>
+                </div>
             </div>
             
             <div class="text-box">
-                <div class="text-label">Translation</div>
-                <textarea id="translated-text" class="persian-text" readonly placeholder="Translation will appear here"></textarea>
+                <div class="text-label">
+                    Result
+                    <button id="copy-result-btn" class="paste-btn">Copy</button>
+                </div>
+                <div id="result-container" class="result-container" style="display: none;"></div>
+                <textarea id="translated-text" style="text-align:left; direction:ltr;" placeholder="Result will appear here"></textarea>
             </div>
         </div>
         
         <div class="controls">
             <button id="translate-btn">Translate</button>
+            <button id="rephrasely-btn" class="secondary-btn">Rephrasely</button>
+        </div>
+    </div>
+    
+    <!-- Context menu for text selection -->
+    <div class="context-menu" id="context-menu">
+        <button class="context-menu-item" id="context-copy">Copy</button>
+        <button class="context-menu-item" id="context-save">Save</button>
+    </div>
+    
+    <!-- Selection status bar -->
+    <div class="selection-status-bar" id="selection-status-bar">
+        <div class="selection-info" id="selection-info-text">0 characters selected</div>
+        <div class="selection-actions">
+            <button class="selection-action-btn" id="selection-copy">Copy</button>
+            <button class="selection-action-btn" id="selection-save">Save</button>
         </div>
     </div>
     
     <script>
-        const { ipcRenderer } = require('electron');
+        const { ipcRenderer, clipboard } = require('electron');
         
         // Elements
         const sourceTextEl = document.getElementById('source-text');
         const translatedTextEl = document.getElementById('translated-text');
+        const resultContainerEl = document.getElementById('result-container');
         const targetLanguageSelect = document.getElementById('target-language');
         const translateBtn = document.getElementById('translate-btn');
+        const rephraselyBtn = document.getElementById('rephrasely-btn');
+        const pinButton = document.getElementById('pin-button');
+        const copyResultBtn = document.getElementById('copy-result-btn');
+        const contextMenu = document.getElementById('context-menu');
+        const contextCopyBtn = document.getElementById('context-copy');
+        const contextSaveBtn = document.getElementById('context-save');
+        const selectionStatusBar = document.getElementById('selection-status-bar');
+        const selectionInfoText = document.getElementById('selection-info-text');
+        const selectionCopyBtn = document.getElementById('selection-copy');
+        const selectionSaveBtn = document.getElementById('selection-save');
         
-        // Apply dark mode
+        // Current selected text info
+        let selectedText = '';
+        let currentTextArea = null;
+        
+        // Set pin state
+        let isPinned = false;
+        
+        // Text selection handler
+        function handleTextSelection(event) {
+            const selection = window.getSelection().toString().trim();
+            if (selection) {
+                selectedText = selection;
+                
+                // Show selection status bar with character count
+                const selectionLength = selectedText.length;
+                selectionInfoText.textContent = `${selectionLength} characters selected`;
+                selectionStatusBar.classList.add('active');
+                
+                // Store the current textarea
+                currentTextArea = event.target;
+            } else {
+                selectedText = '';
+                // Hide selection status bar if no text is selected
+                selectionStatusBar.classList.remove('active');
+                currentTextArea = null;
+            }
+        }
+        
+        // Enable text selection in textareas
+        sourceTextEl.addEventListener('mouseup', handleTextSelection);
+        translatedTextEl.addEventListener('mouseup', handleTextSelection);
+        
+        // Selection Copy button
+        selectionCopyBtn.addEventListener('click', () => {
+            if (selectedText) {
+                clipboard.writeText(selectedText);
+                selectionInfoText.textContent = 'Copied to clipboard!';
+                
+                // Reset after a delay
+                setTimeout(() => {
+                    selectionStatusBar.classList.remove('active');
+                }, 1500);
+            }
+        });
+        
+        // Selection Save button
+        selectionSaveBtn.addEventListener('click', () => {
+            if (selectedText) {
+                selectionInfoText.textContent = 'Save functionality coming soon';
+                
+                // Reset after a delay
+                setTimeout(() => {
+                    selectionStatusBar.classList.remove('active');
+                }, 1500);
+                
+                console.log('Save requested for text:', selectedText);
+            }
+        });
+        
+        // Context menu handler
+        document.addEventListener('contextmenu', (event) => {
+            if (event.target === sourceTextEl || event.target === translatedTextEl) {
+                const selection = window.getSelection().toString().trim();
+                if (selection) {
+                    event.preventDefault();
+                    selectedText = selection;
+                    
+                    // Position the context menu at the cursor position
+                    contextMenu.style.display = 'block';
+                    contextMenu.style.top = `${event.clientY}px`;
+                    contextMenu.style.left = `${event.clientX}px`;
+                    
+                    // Ensure the menu stays within the window
+                    const menuRect = contextMenu.getBoundingClientRect();
+                    if (menuRect.right > window.innerWidth) {
+                        contextMenu.style.left = `${window.innerWidth - menuRect.width - 10}px`;
+                    }
+                    if (menuRect.bottom > window.innerHeight) {
+                        contextMenu.style.top = `${window.innerHeight - menuRect.height - 10}px`;
+                    }
+                }
+            }
+        });
+        
+        // Hide context menu when clicking elsewhere
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('#context-menu')) {
+                contextMenu.style.display = 'none';
+            }
+        });
+        
+        // Context menu copy button
+        contextCopyBtn.addEventListener('click', () => {
+            if (selectedText) {
+                clipboard.writeText(selectedText);
+                contextMenu.style.display = 'none';
+                
+                // Show feedback in the status bar
+                selectionInfoText.textContent = 'Copied to clipboard!';
+                selectionStatusBar.classList.add('active');
+                
+                // Hide after a delay
+                setTimeout(() => {
+                    selectionStatusBar.classList.remove('active');
+                }, 1500);
+            }
+        });
+        
+        // Context menu save button
+        contextSaveBtn.addEventListener('click', () => {
+            if (selectedText) {
+                contextMenu.style.display = 'none';
+                
+                // Show feedback in the status bar
+                selectionInfoText.textContent = 'Save functionality coming soon';
+                selectionStatusBar.classList.add('active');
+                
+                // Hide after a delay
+                setTimeout(() => {
+                    selectionStatusBar.classList.remove('active');
+                }, 1500);
+                
+                console.log('Save requested for text:', selectedText);
+            }
+        });
+        
+        // Copy result button
+        copyResultBtn.addEventListener('click', () => {
+            const resultText = translatedTextEl.value;
+            if (resultText) {
+                clipboard.writeText(resultText);
+                copyResultBtn.textContent = 'Copied';
+                setTimeout(() => {
+                    copyResultBtn.textContent = 'Copy';
+                }, 2000);
+            }
+        });
+        
+        // Pin button click handler
+        pinButton.addEventListener('click', () => {
+            isPinned = !isPinned;
+            if (isPinned) {
+                pinButton.classList.add('pin-active');
+            } else {
+                pinButton.classList.remove('pin-active');
+            }
+            ipcRenderer.send('set-always-on-top', isPinned);
+        });
+        
+        // Apply dark mode to the UI
         function applyDarkMode(isDark) {
             document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
         }
         
-        // Listen for dark mode changes
+        // Listen for dark mode changes from main process
         ipcRenderer.on('set-dark-mode', (event, isDark) => {
             applyDarkMode(isDark);
         });
@@ -280,17 +661,26 @@
             const language = targetLanguageSelect.value;
             if (isRTL(language)) {
                 translatedTextEl.classList.add('rtl-languages');
+                translatedTextEl.style.textAlign = 'right';
+                translatedTextEl.style.direction = 'rtl';
+                // Set Vazirmatn font for RTL languages
+                translatedTextEl.style.fontFamily = '"Vazirmatn", "Tahoma", "Arial", sans-serif';
             } else {
                 translatedTextEl.classList.remove('rtl-languages');
+                translatedTextEl.style.textAlign = 'left';
+                translatedTextEl.style.direction = 'ltr';
+                // Standard font for LTR languages
+                translatedTextEl.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
             }
         }
         
         // Translation process
         function performTranslation() {
             const sourceText = sourceTextEl.value.trim();
-            if (!sourceText) return;
+            if (!sourceText) {
+                return;
+            }
             
-            // Show loading state
             translatedTextEl.value = "";
             const loadingSpinner = document.createElement('div');
             loadingSpinner.className = 'loader';
@@ -301,31 +691,136 @@
             translatedTextEl.parentNode.style.position = 'relative';
             translatedTextEl.parentNode.appendChild(loadingSpinner);
             
-            // Send to main process for translation
+            // Set RTL direction for RTL languages
+            setDirection();
+            
             ipcRenderer.send('perform-direct-translation', {
                 text: sourceText,
                 targetLanguage: targetLanguageSelect.value
             });
         }
         
+        // Rephrasely process
+        function performRephrasely() {
+            const sourceText = sourceTextEl.value.trim();
+            if (!sourceText) {
+                return;
+            }
+            
+            translatedTextEl.value = "";
+            const loadingSpinner = document.createElement('div');
+            loadingSpinner.className = 'loader';
+            loadingSpinner.style.position = 'absolute';
+            loadingSpinner.style.top = '50%';
+            loadingSpinner.style.left = '50%';
+            loadingSpinner.style.transform = 'translate(-50%, -50%)';
+            translatedTextEl.parentNode.style.position = 'relative';
+            translatedTextEl.parentNode.appendChild(loadingSpinner);
+            
+            // Always set text as left-aligned and LTR for Rephrasely results
+            translatedTextEl.classList.remove('rtl-languages');
+            translatedTextEl.style.textAlign = 'left';
+            translatedTextEl.style.direction = 'ltr';
+            // Set appropriate font for English text
+            translatedTextEl.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+            
+            const rephrasePrompt = `Transform the following sentence into all of the following modes. For each mode, provide a rewritten version of the input sentence while keeping the meaning the same. Use clear labels.
+
+Sentence: ${sourceText}
+
+Modes:
+standard:  
+fluency:  
+humanize:  
+formal:  
+academic:  
+simple:  
+creative:  
+expand:  
+shorten:`;
+            
+            ipcRenderer.send('perform-direct-translation', {
+                text: rephrasePrompt,
+                targetLanguage: 'english',
+                isRephrasely: true  // Adding a flag to better identify Rephrasely requests
+            });
+        }
+        
         // Listen for translation result
         ipcRenderer.on('direct-translation-complete', (event, data) => {
-            // Remove loading spinner
             const loadingSpinner = translatedTextEl.parentNode.querySelector('.loader');
             if (loadingSpinner) {
                 loadingSpinner.remove();
             }
             
             if (data && data.translatedText) {
-                translatedTextEl.value = data.translatedText;
+                // Detect if this is a Rephrasely result or normal translation
+                const isRephrasely = data.isRephrasely || 
+                    (data.translatedText.includes('standard:') && 
+                     data.translatedText.includes('fluency:') && 
+                     data.translatedText.includes('humanize:'));
+                
+                // Display result with appropriate formatting
+                displayFormattedResult(data.translatedText, isRephrasely);
+                
+                // Set text direction
+                if (isRephrasely) {
+                    // For Rephrasely, always left-aligned
+                    resultContainerEl.style.textAlign = 'left';
+                    resultContainerEl.style.direction = 'ltr';
+                    resultContainerEl.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+                } else {
+                    // For normal translation, based on language
+                    const language = targetLanguageSelect.value;
+                    if (isRTL(language)) {
+                        translatedTextEl.classList.add('rtl-languages');
+                        translatedTextEl.style.textAlign = 'right';
+                        translatedTextEl.style.direction = 'rtl';
+                        translatedTextEl.style.fontFamily = '"Vazirmatn", "Tahoma", "Arial", sans-serif';
+                    } else {
+                        translatedTextEl.classList.remove('rtl-languages');
+                        translatedTextEl.style.textAlign = 'left';
+                        translatedTextEl.style.direction = 'ltr';
+                        translatedTextEl.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+                    }
+                }
             } else {
+                // Error receiving result
                 translatedTextEl.value = "Translation failed";
+                translatedTextEl.style.display = 'block';
+                resultContainerEl.style.display = 'none';
+            }
+        });
+        
+        // Handle keyboard shortcuts for selection
+        document.addEventListener('keydown', (event) => {
+            // Ctrl+C or Cmd+C to copy selected text
+            if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
+                if (selectedText) {
+                    // The browser's default copy behavior will handle this,
+                    // but we can show feedback
+                    selectionInfoText.textContent = 'Copied to clipboard!';
+                    selectionStatusBar.classList.add('active');
+                    
+                    // Hide after a delay
+                    setTimeout(() => {
+                        selectionStatusBar.classList.remove('active');
+                    }, 1500);
+                }
+            }
+            
+            // Escape key to hide context menu and selection bar or close window
+            if (event.key === 'Escape') {
+                contextMenu.style.display = 'none';
+                selectionStatusBar.classList.remove('active');
+                
+                // Send close window message to main process
+                ipcRenderer.send('close-window');
             }
         });
         
         // Listen for translation error
         ipcRenderer.on('direct-translation-error', (event, data) => {
-            // Remove loading spinner
             const loadingSpinner = translatedTextEl.parentNode.querySelector('.loader');
             if (loadingSpinner) {
                 loadingSpinner.remove();
@@ -341,31 +836,118 @@
                 setDirection();
             }
             
-            // Apply dark mode
             applyDarkMode(settings.darkMode || false);
         });
         
         // Event listeners
         window.addEventListener('DOMContentLoaded', () => {
-            // Request settings
             ipcRenderer.send('get-settings');
             
-            // Set initial direction
+            // Set initial direction based on selected language
             setDirection();
+            
+            // Set initial result field as left-aligned for placeholder
+            // This state is maintained until setDirection is called
+            translatedTextEl.style.textAlign = 'left';
+            translatedTextEl.style.direction = 'ltr';
         });
         
+        // Function to paste text from clipboard
+        function pasteFromClipboard() {
+            try {
+                const clipboardText = clipboard.readText();
+                if (clipboardText) {
+                    sourceTextEl.value = clipboardText;
+                }
+            } catch (error) {
+                console.error('Error pasting from clipboard:', error);
+                // Show a more user-friendly error in case the clipboard access fails
+                alert('Could not access clipboard. Please try copying and pasting manually.');
+            }
+        }
+        
+        // Safely read from clipboard with error handling
+        function safeReadClipboard() {
+            try {
+                return clipboard.readText() || '';
+            } catch (error) {
+                console.error('Failed to read clipboard:', error);
+                return '';
+            }
+        }
+        
         // Translate button
-        translateBtn.addEventListener('click', performTranslation);
+        translateBtn.addEventListener('click', () => {
+            performTranslation();
+        });
+        
+        // Rephrasely button
+        rephraselyBtn.addEventListener('click', () => {
+            performRephrasely();
+        });
+        
+        // Paste button
+        document.getElementById('paste-btn').addEventListener('click', () => {
+            pasteFromClipboard();
+        });
         
         // Language change
         targetLanguageSelect.addEventListener('change', setDirection);
         
-        // Enter key in source text
+        // Enable paste with Ctrl+V
         sourceTextEl.addEventListener('keydown', (e) => {
+            // For Ctrl+Enter translate
             if (e.key === 'Enter' && e.ctrlKey) {
                 performTranslation();
+                return;
+            }
+            
+            // For Ctrl+V paste - this should be handled automatically by the browser
+            // but we'll add an explicit handler in case it's not working
+            if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+                // Don't try to override the browser's native paste functionality
+                // Just let it happen naturally
+                // The setTimeout is just to ensure our text is there after the paste
+                setTimeout(() => {
+                    if (!sourceTextEl.value && safeReadClipboard()) {
+                        sourceTextEl.value = safeReadClipboard();
+                    }
+                }, 100);
             }
         });
+        
+        // Format Rephrasely output to highlight keywords
+        function formatRephraselyOutput(text) {
+            // Keywords that should be colored green
+            const keywords = [
+                'standard', 'fluency', 'humanize', 'formal', 
+                'academic', 'simple', 'creative', 'expand', 'shorten'
+            ];
+            
+            // Search pattern to find keywords with colons
+            const pattern = new RegExp(`(${keywords.join('|')})(\\s*)(\\:)`, 'g');
+            
+            // Replace with HTML with colored classes
+            return text.replace(pattern, '<span class="rephrasely-keyword">$1</span>$2<span class="rephrasely-colon">:</span>');
+        }
+        
+        // Function to display result with appropriate formatting
+        function displayFormattedResult(text, isRephrasely) {
+            if (isRephrasely) {
+                // Display in div with HTML formatting
+                resultContainerEl.innerHTML = formatRephraselyOutput(text);
+                resultContainerEl.style.display = 'block';
+                translatedTextEl.style.display = 'none';
+                
+                // Store original text in textarea for copying
+                translatedTextEl.value = text;
+            } else {
+                // Display normal text in textarea
+                translatedTextEl.value = text;
+                translatedTextEl.style.display = 'block';
+                resultContainerEl.style.display = 'none';
+            }
+        }
     </script>
 </body>
 </html> 
