@@ -180,6 +180,20 @@
             line-height: 1.5;
             white-space: pre-wrap;
             word-wrap: break-word;
+            user-select: text;
+            cursor: text;
+            outline: none;
+        }
+        
+        .result-container:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+        }
+        
+        .result-container::selection,
+        .result-container *::selection {
+            background-color: var(--primary-color);
+            color: white;
         }
         
         .rephrasely-keyword {
@@ -197,7 +211,7 @@
             box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
         }
         
-        /* استایل برای placeholder در textarea نتیجه */
+        /* Styles for placeholder in result textarea */
         #translated-text::placeholder {
             text-align: left;
             direction: ltr;
@@ -393,6 +407,90 @@
         .selection-action-btn:hover {
             background-color: rgba(255, 255, 255, 0.3);
         }
+        
+        .rewrite-style-item {
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--divider-color);
+            padding-bottom: 10px;
+        }
+        
+        .rewrite-style-header {
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .rewrite-style-content {
+            margin-left: 10px;
+            line-height: 1.5;
+        }
+        
+        /* Improved styling for rewrite cards */
+        .modern-rewrite-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .modern-rewrite-item {
+            background-color: var(--input-bg);
+            border-radius: 6px;
+            border-left: 3px solid var(--primary-color);
+            padding: 4px 8px;
+            margin-bottom: 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modern-rewrite-label {
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 1px 8px;
+            border-radius: 3px;
+            text-transform: capitalize;
+            display: inline-block;
+            margin-bottom: 2px;
+        }
+        
+        .modern-rewrite-content {
+            font-size: 13px;
+            line-height: 1.2;
+            margin-top: 0;
+            padding-left: 0;
+        }
+        
+        [data-theme="dark"] .modern-rewrite-item {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        [data-theme="dark"] .modern-rewrite-item:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Modern scrollbar styling */
+        textarea, .result-container {
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--secondary-bg);
+        }
+        
+        textarea::-webkit-scrollbar, .result-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        textarea::-webkit-scrollbar-track, .result-container::-webkit-scrollbar-track {
+            background: var(--secondary-bg);
+            border-radius: 4px;
+        }
+        
+        textarea::-webkit-scrollbar-thumb, .result-container::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        textarea::-webkit-scrollbar-thumb:hover, .result-container::-webkit-scrollbar-thumb:hover {
+            background-color: var(--primary-hover);
+        }
     </style>
 </head>
 <body>
@@ -446,14 +544,14 @@
                     Result
                     <button id="copy-result-btn" class="paste-btn">Copy</button>
                 </div>
-                <div id="result-container" class="result-container" style="display: none;"></div>
+                <div id="result-container" class="result-container" style="display: none;" tabindex="0"></div>
                 <textarea id="translated-text" style="text-align:left; direction:ltr;" placeholder="Result will appear here"></textarea>
             </div>
         </div>
         
         <div class="controls">
             <button id="translate-btn">Translate</button>
-            <button id="rephrasely-btn" class="secondary-btn">Rephrasely</button>
+            <button id="rephrasely-btn" class="secondary-btn">Rewrite Styles</button>
         </div>
     </div>
     
@@ -520,9 +618,15 @@
             }
         }
         
-        // Enable text selection in textareas
+        // Enable text selection in textareas and result container
         sourceTextEl.addEventListener('mouseup', handleTextSelection);
         translatedTextEl.addEventListener('mouseup', handleTextSelection);
+        resultContainerEl.addEventListener('mouseup', handleTextSelection);
+        
+        // Make result container focusable and handle clicks
+        resultContainerEl.addEventListener('click', () => {
+            resultContainerEl.focus();
+        });
         
         // Selection Copy button
         selectionCopyBtn.addEventListener('click', () => {
@@ -553,25 +657,51 @@
         
         // Context menu handler
         document.addEventListener('contextmenu', (event) => {
-            if (event.target === sourceTextEl || event.target === translatedTextEl) {
+            // Check if clicked element is one of our text containers or inside the result container
+            const isSourceText = event.target === sourceTextEl;
+            const isTranslatedText = event.target === translatedTextEl;
+            const isResultContainer = event.target === resultContainerEl || resultContainerEl.contains(event.target);
+            
+            if (isSourceText || isTranslatedText || isResultContainer) {
+                event.preventDefault();
+                
+                // Get selected text
                 const selection = window.getSelection().toString().trim();
+                
+                // Store the current text area or container
+                if (isSourceText) {
+                    currentTextArea = sourceTextEl;
+                } else if (isTranslatedText) {
+                    currentTextArea = translatedTextEl;
+                } else if (isResultContainer) {
+                    currentTextArea = resultContainerEl;
+                }
+                
+                // Show context menu even if no selection (we'll update the menu items below)
+                // Position the context menu at the cursor position
+                contextMenu.style.display = 'block';
+                contextMenu.style.top = `${event.clientY}px`;
+                contextMenu.style.left = `${event.clientX}px`;
+                
+                // Ensure the menu stays within the window
+                const menuRect = contextMenu.getBoundingClientRect();
+                if (menuRect.right > window.innerWidth) {
+                    contextMenu.style.left = `${window.innerWidth - menuRect.width - 10}px`;
+                }
+                if (menuRect.bottom > window.innerHeight) {
+                    contextMenu.style.top = `${window.innerHeight - menuRect.height - 10}px`;
+                }
+                
+                // Store selected text for copy/save operations
+                selectedText = selection;
+                
+                // Update menu items based on selection
                 if (selection) {
-                    event.preventDefault();
-                    selectedText = selection;
-                    
-                    // Position the context menu at the cursor position
-                    contextMenu.style.display = 'block';
-                    contextMenu.style.top = `${event.clientY}px`;
-                    contextMenu.style.left = `${event.clientX}px`;
-                    
-                    // Ensure the menu stays within the window
-                    const menuRect = contextMenu.getBoundingClientRect();
-                    if (menuRect.right > window.innerWidth) {
-                        contextMenu.style.left = `${window.innerWidth - menuRect.width - 10}px`;
-                    }
-                    if (menuRect.bottom > window.innerHeight) {
-                        contextMenu.style.top = `${window.innerHeight - menuRect.height - 10}px`;
-                    }
+                    contextCopyBtn.textContent = 'Copy';
+                    contextSaveBtn.textContent = 'Save';
+                } else {
+                    contextCopyBtn.textContent = 'Copy All';
+                    contextSaveBtn.textContent = 'Save All';
                 }
             }
         });
@@ -585,8 +715,19 @@
         
         // Context menu copy button
         contextCopyBtn.addEventListener('click', () => {
-            if (selectedText) {
-                clipboard.writeText(selectedText);
+            let textToCopy = selectedText;
+            
+            // If no text is selected, copy all text from the current element
+            if (!textToCopy && currentTextArea) {
+                if (currentTextArea === resultContainerEl) {
+                    textToCopy = resultContainerEl.textContent;
+                } else if (currentTextArea === sourceTextEl || currentTextArea === translatedTextEl) {
+                    textToCopy = currentTextArea.value;
+                }
+            }
+            
+            if (textToCopy) {
+                clipboard.writeText(textToCopy);
                 contextMenu.style.display = 'none';
                 
                 // Show feedback in the status bar
@@ -602,7 +743,18 @@
         
         // Context menu save button
         contextSaveBtn.addEventListener('click', () => {
-            if (selectedText) {
+            let textToSave = selectedText;
+            
+            // If no text is selected, save all text from the current element
+            if (!textToSave && currentTextArea) {
+                if (currentTextArea === resultContainerEl) {
+                    textToSave = resultContainerEl.textContent;
+                } else if (currentTextArea === sourceTextEl || currentTextArea === translatedTextEl) {
+                    textToSave = currentTextArea.value;
+                }
+            }
+            
+            if (textToSave) {
                 contextMenu.style.display = 'none';
                 
                 // Show feedback in the status bar
@@ -614,13 +766,30 @@
                     selectionStatusBar.classList.remove('active');
                 }, 1500);
                 
-                console.log('Save requested for text:', selectedText);
+                console.log('Save requested for text:', textToSave);
             }
         });
         
         // Copy result button
         copyResultBtn.addEventListener('click', () => {
-            const resultText = translatedTextEl.value;
+            let resultText = '';
+            
+            // If the formatted result is visible, get content from there
+            if (resultContainerEl.style.display !== 'none') {
+                // If there's a selection in the result container, use that
+                const selection = window.getSelection();
+                if (selection.toString().trim() && 
+                    (selection.anchorNode === resultContainerEl || resultContainerEl.contains(selection.anchorNode))) {
+                    resultText = selection.toString().trim();
+                } else {
+                    // Otherwise get the full text content
+                    resultText = resultContainerEl.textContent;
+                }
+            } else {
+                // Otherwise get from the textarea
+                resultText = translatedTextEl.value;
+            }
+            
             if (resultText) {
                 clipboard.writeText(resultText);
                 copyResultBtn.textContent = 'Copied';
@@ -724,20 +893,24 @@
             // Set appropriate font for English text
             translatedTextEl.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
             
-            const rephrasePrompt = `Transform the following sentence into all of the following modes. For each mode, provide a rewritten version of the input sentence while keeping the meaning the same. Use clear labels.
+            const rephrasePrompt = `Transform the following sentence into all of the following modes. For each mode, provide a rewritten version of the input sentence while keeping the meaning the same.
 
 Sentence: ${sourceText}
 
 Modes:
-standard:  
-fluency:  
-humanize:  
-formal:  
-academic:  
-simple:  
-creative:  
-expand:  
-shorten:`;
+- standard
+- fluency
+- humanize
+- formal
+- academic
+- simple
+- creative
+- expand
+- shorten
+
+IMPORTANT: Return ONLY a JSON array with a single object containing all modes, in this exact format:
+[{"standard":"rewritten text","fluency":"rewritten text","humanize":"rewritten text","formal":"rewritten text","academic":"rewritten text","simple":"rewritten text","creative":"rewritten text","expand":"rewritten text","shorten":"rewritten text"}]
+`;
             
             ipcRenderer.send('perform-direct-translation', {
                 text: rephrasePrompt,
@@ -758,7 +931,13 @@ shorten:`;
                 const isRephrasely = data.isRephrasely || 
                     (data.translatedText.includes('standard:') && 
                      data.translatedText.includes('fluency:') && 
-                     data.translatedText.includes('humanize:'));
+                     data.translatedText.includes('humanize:')) ||
+                    // Check for JSON format as well
+                    (data.translatedText.includes('[{') && 
+                     data.translatedText.includes('}]') &&
+                     (data.translatedText.includes('"standard"') || 
+                      data.translatedText.includes('"fluency"') || 
+                      data.translatedText.includes('"humanize"')));
                 
                 // Display result with appropriate formatting
                 displayFormattedResult(data.translatedText, isRephrasely);
@@ -794,11 +973,114 @@ shorten:`;
         
         // Handle keyboard shortcuts for selection
         document.addEventListener('keydown', (event) => {
+            // Ctrl+A or Cmd+A to select all text
+            if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
+                const activeElement = document.activeElement;
+                
+                // For textareas, make sure they're properly selected
+                if (activeElement === sourceTextEl || activeElement === translatedTextEl) {
+                    // Explicitly select all text in textareas to ensure it works in all browsers
+                    event.preventDefault();
+                    activeElement.select();
+                    
+                    // Update selection status
+                    selectedText = activeElement.value;
+                    currentTextArea = activeElement;
+                    
+                    // Show selection info
+                    const selectionLength = selectedText.length;
+                    selectionInfoText.textContent = `${selectionLength} characters selected`;
+                    selectionStatusBar.classList.add('active');
+                } else if (resultContainerEl.contains(activeElement) || 
+                           event.target === resultContainerEl ||
+                           resultContainerEl.style.display !== 'none') {
+                    // For result container, manually select all content
+                    event.preventDefault();
+                    const range = document.createRange();
+                    range.selectNodeContents(resultContainerEl);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    
+                    // Update selection status
+                    selectedText = resultContainerEl.textContent;
+                    currentTextArea = resultContainerEl;
+                    
+                    // Show selection info
+                    const selectionLength = selectedText.length;
+                    selectionInfoText.textContent = `${selectionLength} characters selected`;
+                    selectionStatusBar.classList.add('active');
+                } else {
+                    // If no element is focused, try to focus on sourceTextEl (original text)
+                    sourceTextEl.focus();
+                    sourceTextEl.select();
+                    
+                    // Update selection status
+                    selectedText = sourceTextEl.value;
+                    currentTextArea = sourceTextEl;
+                    
+                    // Show selection info
+                    const selectionLength = selectedText.length;
+                    selectionInfoText.textContent = `${selectionLength} characters selected`;
+                    selectionStatusBar.classList.add('active');
+                }
+            }
+            
+            // Ctrl+V or Cmd+V to paste (especially for original text box)
+            if ((event.ctrlKey || event.metaKey) && event.key === 'v') {
+                // If we're in sourceTextEl, handle paste explicitly
+                if (document.activeElement === sourceTextEl) {
+                    try {
+                        // Let default browser behavior handle it
+                        // But ensure we have focus in case it's not automatically handling it
+                        sourceTextEl.focus();
+                        
+                        // As fallback, try using clipboard API after a short delay if needed
+                        setTimeout(() => {
+                            if (!sourceTextEl.value) {
+                                try {
+                                    const clipText = clipboard.readText();
+                                    if (clipText) {
+                                        sourceTextEl.value = clipText;
+                                    }
+                                } catch (err) {
+                                    console.error('Clipboard fallback error:', err);
+                                }
+                            }
+                        }, 100);
+                    } catch (error) {
+                        console.error('Error in paste operation:', error);
+                        // Fallback paste method if browser paste doesn't work
+                        try {
+                            const clipText = clipboard.readText();
+                            if (clipText) {
+                                // Get cursor position
+                                const start = sourceTextEl.selectionStart;
+                                const end = sourceTextEl.selectionEnd;
+                                
+                                // Insert text at cursor position
+                                sourceTextEl.value = 
+                                    sourceTextEl.value.substring(0, start) + 
+                                    clipText + 
+                                    sourceTextEl.value.substring(end);
+                                
+                                // Move cursor after inserted text
+                                sourceTextEl.selectionStart = sourceTextEl.selectionEnd = start + clipText.length;
+                            }
+                        } catch (clipErr) {
+                            console.error('Clipboard error:', clipErr);
+                        }
+                    }
+                }
+                // For other elements, let the browser handle the paste event
+            }
+            
             // Ctrl+C or Cmd+C to copy selected text
             if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
-                if (selectedText) {
-                    // The browser's default copy behavior will handle this,
-                    // but we can show feedback
+                const selection = window.getSelection().toString().trim();
+                if (selection) {
+                    clipboard.writeText(selection);
+                    // Show feedback
                     selectionInfoText.textContent = 'Copied to clipboard!';
                     selectionStatusBar.classList.add('active');
                     
@@ -858,11 +1140,27 @@ shorten:`;
                 const clipboardText = clipboard.readText();
                 if (clipboardText) {
                     sourceTextEl.value = clipboardText;
+                    sourceTextEl.focus();
+                    
+                    // Show feedback to the user
+                    selectionInfoText.textContent = 'Text pasted from clipboard';
+                    selectionStatusBar.classList.add('active');
+                    
+                    // Hide after a delay
+                    setTimeout(() => {
+                        selectionStatusBar.classList.remove('active');
+                    }, 1500);
                 }
             } catch (error) {
                 console.error('Error pasting from clipboard:', error);
                 // Show a more user-friendly error in case the clipboard access fails
-                alert('Could not access clipboard. Please try copying and pasting manually.');
+                selectionInfoText.textContent = 'Could not access clipboard';
+                selectionStatusBar.classList.add('active');
+                
+                // Hide after a delay
+                setTimeout(() => {
+                    selectionStatusBar.classList.remove('active');
+                }, 1500);
             }
         }
         
@@ -902,33 +1200,73 @@ shorten:`;
                 return;
             }
             
-            // For Ctrl+V paste - this should be handled automatically by the browser
-            // but we'll add an explicit handler in case it's not working
+            // For Ctrl+V paste - explicitly handle it again here for redundancy
             if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
-                // Don't try to override the browser's native paste functionality
-                // Just let it happen naturally
-                // The setTimeout is just to ensure our text is there after the paste
-                setTimeout(() => {
-                    if (!sourceTextEl.value && safeReadClipboard()) {
-                        sourceTextEl.value = safeReadClipboard();
-                    }
-                }, 100);
+                try {
+                    // First try to let the browser handle it natively
+                    // Fallback will trigger if needed through the document keydown handler
+                    e.stopPropagation(); // Don't duplicate the handling
+                } catch (err) {
+                    console.error('Error in paste event:', err);
+                }
             }
         });
         
         // Format Rephrasely output to highlight keywords
         function formatRephraselyOutput(text) {
-            // Keywords that should be colored green
-            const keywords = [
-                'standard', 'fluency', 'humanize', 'formal', 
-                'academic', 'simple', 'creative', 'expand', 'shorten'
-            ];
-            
-            // Search pattern to find keywords with colons
-            const pattern = new RegExp(`(${keywords.join('|')})(\\s*)(\\:)`, 'g');
-            
-            // Replace with HTML with colored classes
-            return text.replace(pattern, '<span class="rephrasely-keyword">$1</span>$2<span class="rephrasely-colon">:</span>');
+            try {
+                // First try to parse as JSON
+                let jsonData;
+                try {
+                    // Handle case when the text might contain JSON
+                    if (text.includes('[{') && text.includes('}]')) {
+                        // Extract JSON portion if it's embedded in other text
+                        const jsonMatch = text.match(/\[\s*\{.*\}\s*\]/s);
+                        if (jsonMatch) {
+                            jsonData = JSON.parse(jsonMatch[0]);
+                        } else {
+                            jsonData = JSON.parse(text);
+                        }
+                    } else {
+                        jsonData = JSON.parse(text);
+                    }
+
+                    // If parsing succeeded and we have an array with the expected structure
+                    if (Array.isArray(jsonData) && jsonData.length > 0) {
+                        let formattedOutput = '<div class="modern-rewrite-container">';
+                        
+                        // Get the first item in the array
+                        const styles = jsonData[0];
+                        
+                        // Create formatted HTML for each style - minimize whitespace
+                        for (const [style, content] of Object.entries(styles)) {
+                            if (content && content.trim()) {
+                                formattedOutput += `<div class="modern-rewrite-item"><div class="modern-rewrite-label">${style}</div><div class="modern-rewrite-content">${content}</div></div>`;
+                            }
+                        }
+                        
+                        formattedOutput += '</div>';
+                        return formattedOutput || "No valid rewrite styles were found.";
+                    }
+                } catch (e) {
+                    console.log("JSON parsing failed, falling back to regex formatting", e);
+                }
+                
+                // Fallback to the original regex-based formatting
+                const keywords = [
+                    'standard', 'fluency', 'humanize', 'formal', 
+                    'academic', 'simple', 'creative', 'expand', 'shorten'
+                ];
+                
+                // Search pattern to find keywords with colons
+                const pattern = new RegExp(`(${keywords.join('|')})(\\s*)(\\:)`, 'g');
+                
+                // Replace with HTML with colored classes
+                return text.replace(pattern, '<span class="rephrasely-keyword">$1</span>$2<span class="rephrasely-colon">:</span>');
+            } catch (error) {
+                console.error("Error formatting rewrite styles:", error);
+                return text; // Return original text if there's any error
+            }
         }
         
         // Function to display result with appropriate formatting

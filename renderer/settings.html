@@ -318,7 +318,7 @@
                 <input type="text" id="api-key" placeholder="Enter your API key">
                 <button class="paste-button" id="paste-api-key">Paste</button>
             </div>
-            <div class="caption">Get your API key from openrouter.ai</div>
+            <div class="caption">Get your API key from <a href="#" id="openrouter-link">openrouter.ai</a></div>
         </div>
         
         <div class="setting-group">
@@ -484,6 +484,13 @@
                 const { shell } = require('electron');
                 // Open the containing folder and select the file
                 shell.showItemInFolder(logFilePath);
+            });
+            
+            // Setup openrouter.ai link
+            document.getElementById('openrouter-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                const { shell } = require('electron');
+                shell.openExternal('https://openrouter.ai/');
             });
         });
         

@@ -174,7 +174,7 @@ if (isDevelopment) {
 // Handle attempt to open a second instance
 app.on('second-instance', (event, commandLine, workingDirectory) => {
   safeConsole.log('Second instance detected, focusing the existing window.');
-  
+
   // Focus the main window if it exists
   if (translationWindow && !isTranslationWindowDestroyed) {
     if (translationWindow.isMinimized()) translationWindow.restore();
@@ -241,7 +241,7 @@ process.on('uncaughtException', (error) => {
     
     // Try to write crash report to log file in a non-blocking manner
     try {
-      const logPath = getLogFilePath();
+    const logPath = getLogFilePath();
       fs.writeFile(logPath, crashReport, (writeErr) => {
         if (writeErr) {
           console.error(`Failed to write crash report to ${logPath}: ${writeErr.message}`);
@@ -264,55 +264,55 @@ process.on('uncaughtException', (error) => {
     // If we can, try to show an error notification
     if (app.isReady()) {
       try {
-        const crashWindow = new BrowserWindow({
-          width: 400,
-          height: 300,
-          alwaysOnTop: true,
-          webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
+      const crashWindow = new BrowserWindow({
+        width: 400,
+        height: 300,
+        alwaysOnTop: true,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      
+      // Construct the HTML for the error message
+      const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Pro Translator Crash</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
+            padding: 20px;
+            color: #333;
           }
-        });
-        
-        // Construct the HTML for the error message
-        const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Pro Translator Crash</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
-              padding: 20px;
-              color: #333;
-            }
-            h2 {
-              color: #d32f2f;
-            }
-            .log-path {
-              background: #f5f5f5;
-              padding: 10px;
-              border-radius: 4px;
-              word-break: break-all;
-            }
-          </style>
-        </head>
-        <body>
-          <h2>Pro Translator has crashed</h2>
-          <p>The application encountered a problem and needs to close.</p>
+          h2 {
+            color: #d32f2f;
+          }
+          .log-path {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            word-break: break-all;
+          }
+        </style>
+      </head>
+      <body>
+        <h2>Pro Translator has crashed</h2>
+        <p>The application encountered a problem and needs to close.</p>
           <p>A crash log has been saved.</p>
           <p>Please send the log file to: <a href="mailto:mortezadalil@gmail.com">mortezadalil@gmail.com</a></p>
           <div class="error-details">
             <h3>Error Details:</h3>
             <pre>${error.message}</pre>
           </div>
-        </body>
-        </html>
-        `;
-        
-        // Load the HTML
-        crashWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+      </body>
+      </html>
+      `;
+      
+      // Load the HTML
+      crashWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
       } catch (windowError) {
         console.error('Failed to create crash window:', windowError);
       }
@@ -352,160 +352,160 @@ app.whenReady().then(() => {
   try {
     safeConsole.log('Application starting up...');
     
-    // For macOS: we need to create a completely minimal menu
-    // but with the name Pro Translator
-    if (process.platform === 'darwin') {
-      // Empty menu with only the absolute essentials
-      const template = [
-        {
-          label: 'Pro Translator',
-          submenu: [
-            { role: 'quit' }
-          ]
-        }
-      ];
-      const menu = Menu.buildFromTemplate(template);
-      Menu.setApplicationMenu(menu);
-      
-      // Set dock icon if needed
-      try {
-        const dockIcon = path.join(__dirname, 'build', 'icon.png');
-        if (app.dock) {
-          app.dock.setIcon(require('electron').nativeImage.createFromPath(dockIcon));
+  // For macOS: we need to create a completely minimal menu
+  // but with the name Pro Translator
+  if (process.platform === 'darwin') {
+    // Empty menu with only the absolute essentials
+    const template = [
+      {
+        label: 'Pro Translator',
+        submenu: [
+          { role: 'quit' }
+        ]
+      }
+    ];
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
+    
+    // Set dock icon if needed
+    try {
+      const dockIcon = path.join(__dirname, 'build', 'icon.png');
+      if (app.dock) {
+        app.dock.setIcon(require('electron').nativeImage.createFromPath(dockIcon));
           // Hide dock icon by default for menubar app
           app.dock.hide();
-        }
-      } catch (error) {
-        safeConsole.error('Error setting dock icon:', error);
       }
-    } else {
-      // For Windows/Linux, remove menu completely
-      Menu.setApplicationMenu(null);
+    } catch (error) {
+      safeConsole.error('Error setting dock icon:', error);
     }
-    
+  } else {
     // For Windows/Linux, remove menu completely
-    app.on('browser-window-created', (e, win) => {
-      win.removeMenu();
-    });
-    
-    // Request necessary permissions for macOS
-    if (process.platform === 'darwin') {
-      requestMacOSPermissions();
-    }
-    
-    // Set automatic execution based on saved settings
-    const runAtStartup = store.get('runAtStartup');
-    setAutoLaunch(runAtStartup);
-    
+    Menu.setApplicationMenu(null);
+  }
+  
+  // For Windows/Linux, remove menu completely
+  app.on('browser-window-created', (e, win) => {
+    win.removeMenu();
+  });
+  
+  // Request necessary permissions for macOS
+  if (process.platform === 'darwin') {
+    requestMacOSPermissions();
+  }
+  
+  // Set automatic execution based on saved settings
+  const runAtStartup = store.get('runAtStartup');
+  setAutoLaunch(runAtStartup);
+  
     // Initialize the tray icon first
-    createTray();
+  createTray();
     
     // Then register keyboard shortcuts
-    registerShortcut();
+  registerShortcut();
     
     // Apply theme settings
     applyDarkMode();
+  
+  // Add right-click menu for macOS
+  if (process.platform === 'darwin') {
+    setupContextMenu();
+  }
+  
+    // IPC Event Handlers
+  // Get settings from settings window
+  ipcMain.on('get-settings', (event) => {
+    event.reply('settings-data', store.get());
+  });
+  
+  // Save new settings
+  ipcMain.on('save-settings', (event, newSettings) => {
+    store.set(newSettings);
     
-    // Add right-click menu for macOS
-    if (process.platform === 'darwin') {
-      setupContextMenu();
+    // Update keyboard shortcuts if changed
+    if (newSettings.keyboardShortcut) {
+      globalShortcut.unregisterAll();
+      registerShortcut();
     }
     
-    // IPC Event Handlers
-    // Get settings from settings window
-    ipcMain.on('get-settings', (event) => {
-      event.reply('settings-data', store.get());
-    });
+    // Update automatic execution settings
+    if (newSettings.runAtStartup !== undefined) {
+      setAutoLaunch(newSettings.runAtStartup);
+    }
     
-    // Save new settings
-    ipcMain.on('save-settings', (event, newSettings) => {
-      store.set(newSettings);
+    // Apply dark mode
+    applyDarkMode();
+    
+    event.reply('settings-saved');
+  });
+  
+  // Request new translation
+  ipcMain.on('refresh-translation', (event) => {
+    safeConsole.log('Refresh translation requested');
+    translateSelectedText();
+  });
+  
+  // Announce renderer ready
+  ipcMain.on('renderer-ready', () => {
+    safeConsole.log('Renderer process ready');
+  });
+  
+  // Resize translation window based on content
+  ipcMain.on('resize-translation-window', (event, data) => {
+    if (translationWindow && !translationWindow.isDestroyed()) {
+      // Set window height based on text length
+      let newHeight = 500; // Base height
       
-      // Update keyboard shortcuts if changed
-      if (newSettings.keyboardShortcut) {
-        globalShortcut.unregisterAll();
-        registerShortcut();
+      if (data && data.contentHeight) {
+        // Calculate new height based on content
+        newHeight = Math.max(500, Math.min(700, data.contentHeight + 150));
       }
       
-      // Update automatic execution settings
-      if (newSettings.runAtStartup !== undefined) {
-        setAutoLaunch(newSettings.runAtStartup);
-      }
+      const currentSize = translationWindow.getSize();
+      translationWindow.setSize(currentSize[0], newHeight);
+      safeConsole.log(`Resized translation window to height: ${newHeight}`);
+    }
+  });
+  
+  // Add set-always-on-top event handler
+  ipcMain.on('set-always-on-top', (event, onTop) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) {
+      win.setAlwaysOnTop(onTop);
+      safeConsole.log(`Set window always on top: ${onTop}`);
+    }
+  });
+  
+  // For macOS: recreate tray icon after closing
+  app.on('activate', () => {
+    if (tray === null) {
+      createTray();
+    }
+  });
+  
+  // Process direct translation request
+  ipcMain.on('perform-direct-translation', async (event, data) => {
+    try {
+      safeConsole.log(`Direct translation requested for: ${data.text.substring(0, 30)}${data.text.length > 30 ? '...' : ''}`);
       
-      // Apply dark mode
-      applyDarkMode();
+      const translatedText = await performTranslationRequest(data.text, data.targetLanguage);
       
-      event.reply('settings-saved');
-    });
-    
-    // Request new translation
-    ipcMain.on('refresh-translation', (event) => {
-      safeConsole.log('Refresh translation requested');
-      translateSelectedText();
-    });
-    
-    // Announce renderer ready
-    ipcMain.on('renderer-ready', () => {
-      safeConsole.log('Renderer process ready');
-    });
-    
-    // Resize translation window based on content
-    ipcMain.on('resize-translation-window', (event, data) => {
-      if (translationWindow && !translationWindow.isDestroyed()) {
-        // Set window height based on text length
-        let newHeight = 500; // Base height
-        
-        if (data && data.contentHeight) {
-          // Calculate new height based on content
-          newHeight = Math.max(500, Math.min(700, data.contentHeight + 150));
-        }
-        
-        const currentSize = translationWindow.getSize();
-        translationWindow.setSize(currentSize[0], newHeight);
-        safeConsole.log(`Resized translation window to height: ${newHeight}`);
-      }
-    });
-    
-    // Add set-always-on-top event handler
-    ipcMain.on('set-always-on-top', (event, onTop) => {
-      const win = BrowserWindow.fromWebContents(event.sender);
-      if (win && !win.isDestroyed()) {
-        win.setAlwaysOnTop(onTop);
-        safeConsole.log(`Set window always on top: ${onTop}`);
-      }
-    });
-    
-    // For macOS: recreate tray icon after closing
-    app.on('activate', () => {
-      if (tray === null) {
-        createTray();
-      }
-    });
-    
-    // Process direct translation request
-    ipcMain.on('perform-direct-translation', async (event, data) => {
-      try {
-        safeConsole.log(`Direct translation requested for: ${data.text.substring(0, 30)}${data.text.length > 30 ? '...' : ''}`);
-        
-        const translatedText = await performTranslationRequest(data.text, data.targetLanguage);
-        
-        if (translateNowWindow && !translateNowWindow.isDestroyed()) {
-          translateNowWindow.webContents.send('direct-translation-complete', {
-            originalText: data.text,
+      if (translateNowWindow && !translateNowWindow.isDestroyed()) {
+        translateNowWindow.webContents.send('direct-translation-complete', {
+          originalText: data.text,
             translatedText: translatedText,
             isRephrasely: data.isRephrasely || false
-          });
-        }
-      } catch (error) {
-        safeConsole.error('Direct translation error:', error);
-        
-        if (translateNowWindow && !translateNowWindow.isDestroyed()) {
-          translateNowWindow.webContents.send('direct-translation-error', {
-            error: error.message || 'Translation failed'
-          });
-        }
+        });
       }
-    });
+    } catch (error) {
+      safeConsole.error('Direct translation error:', error);
+      
+      if (translateNowWindow && !translateNowWindow.isDestroyed()) {
+        translateNowWindow.webContents.send('direct-translation-error', {
+          error: error.message || 'Translation failed'
+        });
+      }
+    }
+  });
     
     // Setup application watchdog to detect and recover from hangs
     setupWatchdog();
@@ -653,6 +653,17 @@ function createTray() {
   // Double-click for selected text translation
   tray.on('double-click', () => {
     translateSelectedText();
+  });
+  
+  // Add click event to show menu on left-click (for both Windows and macOS)
+  tray.on('click', (event, bounds) => {
+    if (process.platform === 'darwin') {
+      // For macOS: Show the context menu at the tray icon position
+      tray.popUpContextMenu(contextMenu, { x: bounds.x, y: bounds.y + bounds.height });
+    } else {
+      // For Windows: Show the context menu 
+      tray.popUpContextMenu(contextMenu);
+    }
   });
 }
 
@@ -952,6 +963,17 @@ function updateTrayMenu(activeShortcuts = []) {
   tray.on('double-click', () => {
     translateSelectedText();
   });
+  
+  // Add click event to show menu on left-click (for both Windows and macOS)
+  tray.on('click', (event, bounds) => {
+    if (process.platform === 'darwin') {
+      // For macOS: Show the context menu at the tray icon position
+      tray.popUpContextMenu(contextMenu, { x: bounds.x, y: bounds.y + bounds.height });
+    } else {
+      // For Windows: Show the context menu 
+      tray.popUpContextMenu(contextMenu);
+    }
+  });
 }
 
 // Add a stronger function for accessing clipboard text
@@ -1169,27 +1191,47 @@ function createWindow(options, windowType) {
   window.removeMenu();
   window.setMenu(null);
   
-  // Handle window close event - hide only, not close
+  // Handle window close event - hide only for main window, destroy others
   window.on('close', (event) => {
     // Prevent closing if app is not fully quitting
     if (!app.isQuitting) {
-      event.preventDefault();
-      window.hide();
-      try {
+      // On Windows, hide all windows instead of closing them
+      // On macOS, only hide the translation window
+      if (process.platform === 'win32' || windowType === 'translation') {
+        event.preventDefault();
+        window.hide();
         safeConsole.log(`${windowType} window hidden instead of closed`);
-      } catch (error) {
-        // Silently fail if logging fails
+        return false;
+      } else {
+        // For other windows on non-Windows platforms, let them be properly destroyed
+        safeConsole.log(`${windowType} window will be closed and destroyed`);
+        return true;
       }
-      return false;
     }
     return true;
   });
   
   // Add event for when window is hidden
   window.on('hide', () => {
-    // When we hide the window, set the window destroyed flag
-    isTranslationWindowDestroyed = false;
-    safeConsole.log('translationWindow was hidden');
+    // Update the appropriate flag based on window type
+    switch (windowType) {
+      case 'translation':
+        isTranslationWindowDestroyed = false;
+        safeConsole.log('translation window was hidden');
+        break;
+      case 'settings':
+        isSettingsWindowDestroyed = false;
+        safeConsole.log('settings window was hidden');
+        break;
+      case 'about':
+        isAboutWindowDestroyed = false;
+        safeConsole.log('about window was hidden');
+        break;
+      case 'translateNow':
+        isTranslateNowWindowDestroyed = false;
+        safeConsole.log('translateNow window was hidden');
+        break;
+    }
   });
   
   // Track when window is actually destroyed
@@ -1293,21 +1335,31 @@ function createTranslationWindow() {
 
 // Open settings window
 function openSettings() {
-  // If window exists and is not destroyed, activate it
+  // If window exists and is not destroyed, check if it's visible
   if (settingsWindow && !isSettingsWindowDestroyed) {
+    // If window is minimized, restore it
     if (settingsWindow.isMinimized()) {
       settingsWindow.restore();
     }
+    
+    // If window is not visible, force destroy it so we can recreate it
+    if (!settingsWindow.isVisible()) {
+      try {
+        settingsWindow.destroy();
+        settingsWindow = null;
+        isSettingsWindowDestroyed = true;
+        safeConsole.log('Settings window was forcibly destroyed to recreate it');
+      } catch (error) {
+        safeConsole.error('Error destroying settings window:', error);
+      }
+    } else {
+      // If window is visible, just focus it
     settingsWindow.focus();
     return;
   }
-  
-  // If window is hidden but still exists, show it again
-  if (settingsWindow && settingsWindow.isVisible() === false) {
-    settingsWindow.show();
-    return;
   }
   
+  // At this point either the window doesn't exist or we destroyed it
   // Window is likely damaged, set to null to create a new window
   if (settingsWindow) {
     settingsWindow = null;
@@ -1337,15 +1389,8 @@ function openSettings() {
       safeConsole.error(`Failed to load settings window: ${errorDescription} (${errorCode})`);
     });
     
-    // Add this event to ensure maintaining correct state
-    settingsWindow.on('hide', () => {
-      isSettingsWindowDestroyed = false;  // Window is hidden but not destroyed
-      safeConsole.log('settings window was hidden');
-    });
-    
     // Add event for when window is shown
     settingsWindow.on('show', () => {
-      safeConsole.log('settings window was shown');
       safeConsole.log('Settings window was shown');
       isSettingsWindowDestroyed = false;
     });
@@ -1403,21 +1448,31 @@ function openAbout() {
 
 // Create direct translation window
 function openTranslateNow() {
-  // If window exists and is not destroyed, activate it
+  // If window exists and is not destroyed, check if it's visible
   if (translateNowWindow && !isTranslateNowWindowDestroyed) {
+    // If window is minimized, restore it
     if (translateNowWindow.isMinimized()) {
       translateNowWindow.restore();
     }
+    
+    // If window is not visible, force destroy it so we can recreate it
+    if (!translateNowWindow.isVisible()) {
+      try {
+        translateNowWindow.destroy();
+        translateNowWindow = null;
+        isTranslateNowWindowDestroyed = true;
+        safeConsole.log('TranslateNow window was forcibly destroyed to recreate it');
+      } catch (error) {
+        safeConsole.error('Error destroying translateNow window:', error);
+      }
+    } else {
+      // If window is visible, just focus it
     translateNowWindow.focus();
-    return translateNowWindow;
+      return translateNowWindow;
+    }
   }
   
-  // If window is hidden but still exists, show it again
-  if (translateNowWindow && translateNowWindow.isVisible() === false) {
-    translateNowWindow.show();
-    return translateNowWindow;
-  }
-  
+  // At this point either the window doesn't exist or we destroyed it
   // Window is likely damaged, set to null to create a new window
   if (translateNowWindow) {
     translateNowWindow = null;
@@ -1444,12 +1499,6 @@ function openTranslateNow() {
     // Check for potential errors
     translateNowWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
       safeConsole.error(`Failed to load translate-now window: ${errorDescription} (${errorCode})`);
-    });
-    
-    // Add this event to ensure maintaining correct state
-    translateNowWindow.on('hide', () => {
-      isTranslateNowWindowDestroyed = false;  // Window is hidden but not destroyed
-      safeConsole.log('translateNow window was hidden');
     });
     
     // Add event for when window is shown
@@ -1690,10 +1739,9 @@ ipcMain.on('close-window', (event) => {
 
 // Keep app running in memory even if all windows are closed
 app.on('window-all-closed', () => {
-  // On macOS, apps usually stay in dock until user Cmd + Q
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  // Do nothing, keep app running in background with tray icon
+  // This ensures the app remains in system tray for both macOS and Windows
+  safeConsole.log('All windows closed, but app continues running in background');
 });
 
 // Unregister shortcuts when quitting app
@@ -1757,7 +1805,7 @@ ipcMain.on('quit-app', () => {
 // Set IPC handler for getting log file path
 ipcMain.on('get-log-file-path', (event) => {
   event.returnValue = getLogFilePath();
-});
+}); 
 
 // Function to properly clean up and exit
 function cleanupAndExit() {

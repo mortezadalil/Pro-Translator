@@ -1,55 +1,71 @@
 #!/bin/bash
 
-# این اسکریپت برنامه را در حالت توسعه اجرا می‌کند
-# و به شما اجازه می‌دهد به صورت دستی برنامه را دوباره راه‌اندازی کنید
+# Dev Launcher Script for Pro Translator
+# This script helps manage the development workflow for Pro Translator
 
-echo "=== Pro Translator Development Mode ==="
-echo "Press Ctrl+C to exit"
-echo "Press 'r' then Enter to restart the application"
-echo "Starting application..."
+# Check that electron is installed
+if ! command -v electron &> /dev/null; then
+    echo "Error: electron is not installed. Please install it with npm install -g electron"
+    exit 1
+fi
 
-# تابع برای اجرای برنامه در پس زمینه
+# Function to run the app in the background
 run_app() {
-  npm run dev &
-  APP_PID=$!
-  echo "App running with PID: $APP_PID"
+    echo "Starting Pro Translator in development mode..."
+    electron . --dev &
+    APP_PID=$!
+    echo "App started with PID $APP_PID"
 }
 
-# اجرای اولیه برنامه
-run_app
-
-# حلقه برای دریافت ورودی کاربر
+# Loop to get user input
 while true; do
-  read -p "> " input
-  
-  if [ "$input" == "r" ]; then
-    echo "Restarting application..."
+    echo "===================="
+    echo "Pro Translator Dev Launcher"
+    echo "===================="
+    echo "1. Start app"
+    echo "2. Restart app"
+    echo "3. Stop app"
+    echo "4. Exit launcher"
+    echo "===================="
     
-    # کشتن برنامه فعلی
-    if [ ! -z "$APP_PID" ]; then
-      kill $APP_PID 2>/dev/null
-      # منتظر بمانید تا برنامه کاملاً بسته شود
-      sleep 1
-    fi
+    read -p "Enter your choice (1-4): " choice
     
-    # اجرای مجدد برنامه
-    run_app
-  elif [ "$input" == "q" ]; then
-    echo "Exiting..."
-    
-    # کشتن برنامه فعلی
-    if [ ! -z "$APP_PID" ]; then
-      kill $APP_PID 2>/dev/null
-    fi
-    
-    break
-  elif [ "$input" == "?" ] || [ "$input" == "help" ]; then
-    echo "Commands:"
-    echo "  r    - Restart the application"
-    echo "  q    - Quit development mode"
-    echo "  ?    - Show this help"
-  fi
-done
-
-echo "Development session ended."
-exit 0 
+    case $choice in
+        1)
+            if [ -n "$APP_PID" ] && ps -p $APP_PID > /dev/null; then
+                echo "App is already running with PID $APP_PID"
+            else
+                run_app
+            fi
+            ;;
+        2)
+            if [ -n "$APP_PID" ]; then
+                echo "Stopping the app..."
+                kill -9 $APP_PID 2>/dev/null
+                sleep 2
+            fi
+            run_app
+            ;;
+        3)
+            if [ -n "$APP_PID" ]; then
+                echo "Stopping the app..."
+                kill -9 $APP_PID 2>/dev/null
+                APP_PID=""
+                echo "App stopped."
+            else
+                echo "No running app found."
+            fi
+            ;;
+        4)
+            if [ -n "$APP_PID" ]; then
+                echo "Stopping the app..."
+                kill -9 $APP_PID 2>/dev/null
+            fi
+            echo "Exiting launcher."
+            exit 0
+            ;;
+        *)
+            echo "Invalid option, please try again."
+            ;;
+    esac
+done 

@@ -2,20 +2,22 @@
   "name": "pro-translator",
   "productName": "Pro Translator",
   "electronName": "Pro Translator",
-  "version": "2.0.0",
+  "version": "2.5.0",
   "description": "A macOS menu bar translator app built with Electron",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
     "start": "node -e \"process.platform === 'darwin' ? require('child_process').execSync('./mac-launcher.sh', {stdio: 'inherit'}) : require('child_process').execSync('electron . --name=\\\"Pro Translator\\\"', {stdio: 'inherit'})\"",
     "dev": "electron . --name=\"Pro Translator\" --disable-auto-reload",
     "develop": "./dev-launcher.sh",
+    "pack": "electron-builder --dir",
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
-    "build:win": "electron-builder --win",
+    "build:win": "electron-builder --win --x64",
     "build:linux": "electron-builder --linux",
-    "build:all": "electron-builder -mwl"
+    "build:all": "electron-builder -mwl",
+    "dist": "electron-builder --publish never"
   },
-  "author": "",
+  "author": "Morteza Dalil <mortezadalil@gmail.com>",
   "license": "MIT",
   "devDependencies": {
     "electron": "^36.2.0",
@@ -35,6 +37,17 @@
     "directories": {
       "output": "dist"
     },
+    "files": [
+      "**/*",
+      "!**/*.md",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{.idea,.editorconfig,*.yml,.env,*.env}"
+    ],
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "build/icon.icns",
@@ -42,7 +55,29 @@
         "dmg",
         "zip"
       ],
-      "extendInfo": "build/mac/Info.plist"
+      "darkModeSupport": true,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 400
+      }
     },
     "win": {
       "icon": "build/icon.ico",
@@ -60,6 +95,13 @@
           ]
         }
       ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Pro Translator"
     },
     "linux": {
       "icon": "build/icon.png",
