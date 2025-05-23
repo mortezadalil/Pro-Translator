@@ -2,7 +2,7 @@
   "name": "pro-translator",
   "productName": "Pro Translator",
   "electronName": "Pro Translator",
-  "version": "2.5.0",
+  "version": "3.0.0",
   "description": "A macOS menu bar translator app built with Electron",
   "main": "main.js",
   "scripts": {

@@ -2,7 +2,42 @@
 
 A powerful desktop translation application built with Electron that works on Windows, macOS, and Linux.
 
-**Current Version: 2.5.0**
+**Current Version: 3.0.0**
+
+## 📥 Download Latest Version
+
+### 🪟 Windows
+[![Download for Windows](https://img.shields.io/badge/Download-Windows-blue?style=for-the-badge&logo=windows)](https://github.com/mortezadalil/Pro-Translator/releases/download/v3.0.0/Pro.Translator.Setup.3.0.0.exe)
+- **🔧 Installer**: [Pro Translator Setup 3.0.0.exe](https://github.com/mortezadalil/Pro-Translator/releases/download/v3.0.0/Pro.Translator.Setup.3.0.0.exe) *(Recommended)*
+- **📦 Portable**: [Pro Translator 3.0.0.exe](https://github.com/mortezadalil/Pro-Translator/releases/download/v3.0.0/Pro.Translator.3.0.0.exe)
+
+### 🍎 macOS
+[![Download for macOS](https://img.shields.io/badge/Download-macOS-black?style=for-the-badge&logo=apple)](https://github.com/mortezadalil/Pro-Translator/releases/download/v3.0.0/Pro.Translator-3.0.0-arm64.dmg)
+- **💿 DMG Installer**: [Pro Translator-3.0.0-arm64.dmg](https://github.com/mortezadalil/Pro-Translator/releases/download/v3.0.0/Pro.Translator-3.0.0-arm64.dmg) *(Recommended)*
+- **📁 ZIP Archive**: [Pro Translator-3.0.0-arm64-mac.zip](https://github.com/mortezadalil/Pro-Translator/releases/download/v3.0.0/Pro.Translator-3.0.0-arm64-mac.zip)
+
+### 🐧 Linux
+[![Download for Linux](https://img.shields.io/badge/Download-Linux-orange?style=for-the-badge&logo=linux)](https://github.com/mortezadalil/Pro-Translator/releases/download/v3.0.0/Pro.Translator-3.0.0-arm64.AppImage)
+- **🚀 AppImage**: [Pro Translator-3.0.0-arm64.AppImage](https://github.com/mortezadalil/Pro-Translator/releases/download/v3.0.0/Pro.Translator-3.0.0-arm64.AppImage) *(Universal)*
+- **📦 DEB Package**: [pro-translator_3.0.0_arm64.deb](https://github.com/mortezadalil/Pro-Translator/releases/download/v3.0.0/pro-translator_3.0.0_arm64.deb) *(Ubuntu/Debian)*
+
+---
+
+## ✨ What's New in v3.0.0
+
+🔥 **Major Features:**
+- 🤖 **Google Gemini AI Integration** - Now supports both OpenRouter and Google Gemini APIs
+- ⚡ **Smart Auto-Rewrite** - Language Tools shortcut automatically detects selected text and runs rewrite styles
+- 🎯 **Enhanced UI** - Better formatting for rewrite results with modern card-based design
+- 🔗 **Direct API Links** - Quick access to API key pages for both providers
+
+🛠️ **Improvements:**
+- 🎨 Improved JSON parsing for better compatibility
+- 🔧 Enhanced error handling and fallback mechanisms
+- 📋 Better clipboard integration across platforms
+- 🐛 Various bug fixes and stability improvements
+
+---
 
 ## Features
 

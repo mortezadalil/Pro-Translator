@@ -313,6 +313,15 @@
         <h1>Pro Translator Settings</h1>
         
         <div class="setting-group">
+            <label class="setting-label" for="api-provider">API Provider</label>
+            <select id="api-provider">
+                <option value="openrouter">OpenRouter</option>
+                <option value="gemini">Google Gemini</option>
+            </select>
+            <div class="caption">Choose your preferred AI API provider</div>
+        </div>
+        
+        <div class="setting-group" id="openrouter-settings">
             <label class="setting-label" for="api-key">OpenRouter API Key</label>
             <div class="api-key-container">
                 <input type="text" id="api-key" placeholder="Enter your API key">
@@ -321,9 +330,21 @@
             <div class="caption">Get your API key from <a href="#" id="openrouter-link">openrouter.ai</a></div>
         </div>
         
-        <div class="setting-group">
+        <div class="setting-group" id="gemini-settings" style="display: none;">
+            <label class="setting-label" for="gemini-api-key">Google Gemini API Key</label>
+            <div class="api-key-container">
+                <input type="text" id="gemini-api-key" placeholder="Enter your Gemini API key">
+                <button class="paste-button" id="paste-gemini-key">Paste</button>
+            </div>
+            <div class="caption">Get your API key from <a href="#" id="gemini-link">Google AI Studio</a></div>
+        </div>
+        
+        <div class="setting-group" id="language-model-group">
             <label class="setting-label" for="language-model">Language Model</label>
-            <input type="text" id="language-model" placeholder="Enter model ID (e.g. anthropic/claude-3.7-sonnet)">
+            <div class="api-key-container">
+                <input type="text" id="language-model" placeholder="Enter model ID (e.g. anthropic/claude-3.7-sonnet)">
+                <button class="paste-button" id="paste-language-model">Paste</button>
+            </div>
             <div class="caption">Model ID from OpenRouter (e.g. anthropic/claude-3.7-sonnet, anthropic/claude-3-opus, meta-llama/llama-3-70b-instruct)</div>
         </div>
         
@@ -408,8 +429,14 @@
         const { ipcRenderer, clipboard } = require('electron');
         
         // Elements
+        const apiProviderSelect = document.getElementById('api-provider');
+        const openrouterSettings = document.getElementById('openrouter-settings');
+        const geminiSettings = document.getElementById('gemini-settings');
+        const languageModelGroup = document.getElementById('language-model-group');
         const apiKeyInput = document.getElementById('api-key');
+        const geminiApiKeyInput = document.getElementById('gemini-api-key');
         const pasteApiKeyBtn = document.getElementById('paste-api-key');
+        const pasteGeminiKeyBtn = document.getElementById('paste-gemini-key');
         const languageModelInput = document.getElementById('language-model');
         const targetLanguageSelect = document.getElementById('target-language');
         const shortcutDisplay = document.getElementById('shortcut-display');
@@ -453,14 +480,38 @@
         // Request current settings from main process
         ipcRenderer.send('get-settings');
         
+        // Function to toggle provider-specific settings
+        function toggleProviderSettings() {
+            const selectedProvider = apiProviderSelect.value;
+            
+            if (selectedProvider === 'openrouter') {
+                openrouterSettings.style.display = 'block';
+                geminiSettings.style.display = 'none';
+                languageModelGroup.style.display = 'block';
+                languageModelGroup.querySelector('.caption').textContent = 'Model ID from OpenRouter (e.g. anthropic/claude-3.7-sonnet, anthropic/claude-3-opus, meta-llama/llama-3-70b-instruct)';
+            } else if (selectedProvider === 'gemini') {
+                openrouterSettings.style.display = 'none';
+                geminiSettings.style.display = 'block';
+                languageModelGroup.style.display = 'none';
+            }
+        }
+        
+        // Listen for provider changes
+        apiProviderSelect.addEventListener('change', toggleProviderSettings);
+        
         // Receive settings from main process
         ipcRenderer.on('settings-data', (event, settings) => {
+            apiProviderSelect.value = settings.apiProvider || 'openrouter';
             apiKeyInput.value = settings.apiKey || '';
+            geminiApiKeyInput.value = settings.geminiApiKey || '';
             languageModelInput.value = settings.languageModel || '';
             targetLanguageSelect.value = settings.targetLanguage || 'persian';
             useDirectConnectionCheckbox.checked = settings.useDirectIPConnection || false;
             darkModeCheckbox.checked = settings.darkMode || false;
             runAtStartupCheckbox.checked = settings.runAtStartup || false;
+            
+            // Toggle provider settings based on saved selection
+            toggleProviderSettings();
             
             // Apply dark mode based on saved setting
             applyDarkMode(settings.darkMode || false);
@@ -491,6 +542,13 @@
                 e.preventDefault();
                 const { shell } = require('electron');
                 shell.openExternal('https://openrouter.ai/');
+            });
+            
+            // Setup Google AI Studio link
+            document.getElementById('gemini-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                const { shell } = require('electron');
+                shell.openExternal('https://aistudio.google.com/apikey');
             });
         });
         
@@ -591,7 +649,9 @@
         // Handle save button click
         saveButton.addEventListener('click', () => {
             const newSettings = {
+                apiProvider: apiProviderSelect.value,
                 apiKey: apiKeyInput.value,
+                geminiApiKey: geminiApiKeyInput.value,
                 languageModel: languageModelInput.value,
                 targetLanguage: targetLanguageSelect.value,
                 keyboardShortcut: currentShortcut,
@@ -618,6 +678,22 @@
             const clipboardText = clipboard.readText();
             if (clipboardText) {
                 apiKeyInput.value = clipboardText.trim();
+            }
+        });
+        
+        // Handle Gemini paste button click
+        pasteGeminiKeyBtn.addEventListener('click', () => {
+            const clipboardText = clipboard.readText();
+            if (clipboardText) {
+                geminiApiKeyInput.value = clipboardText.trim();
+            }
+        });
+        
+        // Handle language model paste button click
+        document.getElementById('paste-language-model').addEventListener('click', () => {
+            const clipboardText = clipboard.readText();
+            if (clipboardText) {
+                languageModelInput.value = clipboardText.trim();
             }
         });
         

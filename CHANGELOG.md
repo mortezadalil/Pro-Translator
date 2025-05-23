@@ -1,16 +1,63 @@
 # Pro Translator Changelog
 
-## [2.5.0] - 2024-05-14
+## [3.0.0] - 2024-05-23
+
+### Added
+- Google Gemini API support as alternative to OpenRouter
+- API provider selection dropdown in settings (OpenRouter/Gemini)
+- Separate API key fields for OpenRouter and Gemini
+- Auto-populate and rewrite functionality for Language Tools shortcut
+- When selected text exists, Language Tools shortcut automatically populates text and runs rewrite styles
+- Improved Rewrite Styles output formatting for both OpenRouter and Gemini
+- Better JSON parsing for rewrite responses with fallback handling
+- Enhanced Language Tools window with automatic text processing
+- Direct link to Google AI Studio API key page
+
+### Changed
+- Default API provider changed from OpenRouter to Google Gemini
+- Language Tools shortcut now detects selected text and auto-processes it
+- Improved rewrite styles detection for both array and object JSON formats
+- Enhanced error handling for different API response formats
+- Better clipboard integration for auto-populate functionality
 
 ### Fixed
-- Fixed issue with multiple instances of the application launching simultaneously
-- Resolved RTL/LTR text direction issues in the translate-now interface
-- Fixed pin icon rotation (now rotates 90 degrees when active)
-- Improved text alignment for RTL languages (Persian, Arabic)
-- Fixed application crashing due to synchronous logging operations
-- Improved cleanup procedures when closing the application
-- Fixed Windows behavior where closing windows would quit the entire application
-- Improved tray icon integration to keep app running when all windows are closed
+- Rewrite styles now display properly for Gemini API responses
+- Fixed JSON parsing issues with malformed API responses
+- Improved text selection handling across different applications
+- Enhanced AppleScript fallback methods for better compatibility
+- Various minor bug fixes and stability improvements
+
+## [2.7.0] - 2024-05-19
+
+### Added
+- Automatic update check on startup
+- Improved update dialogs with app icon
+- UI/UX improvements for download window
+
+### Fixed
+- Progress bar now updates correctly during download
+- Minor bug fixes and performance improvements
+
+## [2] - 2024-05-19
+
+### Fixed
+- Fixed various UI bugs and performance issues
+- Improved stability and reliability
+- Enhanced error handling and recovery mechanisms
+
+## [2.5] - 2024-05-19
+
+### Fixed
+- Fixed various UI bugs and performance issues
+- Improved stability and reliability
+- Enhanced error handling and recovery mechanisms
+
+## [2.5.0] - 2024-05-19
+
+### Fixed
+- Fixed various UI bugs and performance issues
+- Improved stability and reliability
+- Enhanced error handling and recovery mechanisms
 
 ### Added
 - Added proper text selection support throughout the application

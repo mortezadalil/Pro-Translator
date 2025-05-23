@@ -573,6 +573,24 @@
     <script>
         const { ipcRenderer, clipboard } = require('electron');
         
+        // Safe console logging
+        const safeConsole = {
+            log: (...args) => {
+                try {
+                    console.log(...args);
+                } catch (e) {
+                    // Silently fail if console logging fails
+                }
+            },
+            error: (...args) => {
+                try {
+                    console.error(...args);
+                } catch (e) {
+                    // Silently fail if console logging fails
+                }
+            }
+        };
+        
         // Elements
         const sourceTextEl = document.getElementById('source-text');
         const translatedTextEl = document.getElementById('translated-text');
@@ -898,18 +916,19 @@
 Sentence: ${sourceText}
 
 Modes:
-- standard
-- fluency
-- humanize
-- formal
-- academic
-- simple
-- creative
-- expand
-- shorten
+- standard: Make it clear and neutral
+- fluency: Make it more fluent and natural
+- humanize: Make it more casual and human-like
+- formal: Make it professional and formal
+- academic: Make it scholarly and academic
+- simple: Simplify the language
+- creative: Make it more creative and engaging
+- expand: Add more detail and expand the content
+- shorten: Make it more concise and brief
 
-IMPORTANT: Return ONLY a JSON array with a single object containing all modes, in this exact format:
-[{"standard":"rewritten text","fluency":"rewritten text","humanize":"rewritten text","formal":"rewritten text","academic":"rewritten text","simple":"rewritten text","creative":"rewritten text","expand":"rewritten text","shorten":"rewritten text"}]
+IMPORTANT: Your response must be ONLY a valid JSON object (not an array) containing all modes in this exact format. Do not include any explanatory text, markdown formatting, or code blocks. Just the pure JSON:
+
+{"standard":"rewritten text","fluency":"rewritten text","humanize":"rewritten text","formal":"rewritten text","academic":"rewritten text","simple":"rewritten text","creative":"rewritten text","expand":"rewritten text","shorten":"rewritten text"}
 `;
             
             ipcRenderer.send('perform-direct-translation', {
@@ -932,7 +951,13 @@ IMPORTANT: Return ONLY a JSON array with a single object containing all modes, i
                     (data.translatedText.includes('standard:') && 
                      data.translatedText.includes('fluency:') && 
                      data.translatedText.includes('humanize:')) ||
-                    // Check for JSON format as well
+                    // Check for JSON format as well (both array and object)
+                    (data.translatedText.includes('{') && 
+                     data.translatedText.includes('}') &&
+                     (data.translatedText.includes('"standard"') || 
+                      data.translatedText.includes('"fluency"') || 
+                      data.translatedText.includes('"humanize"'))) ||
+                    // Check for array format
                     (data.translatedText.includes('[{') && 
                      data.translatedText.includes('}]') &&
                      (data.translatedText.includes('"standard"') || 
@@ -968,6 +993,132 @@ IMPORTANT: Return ONLY a JSON array with a single object containing all modes, i
                 translatedTextEl.value = "Translation failed";
                 translatedTextEl.style.display = 'block';
                 resultContainerEl.style.display = 'none';
+            }
+        });
+        
+        // Listen for translation error
+        ipcRenderer.on('direct-translation-error', (event, data) => {
+            const loadingSpinner = translatedTextEl.parentNode.querySelector('.loader');
+            if (loadingSpinner) {
+                loadingSpinner.remove();
+            }
+            
+            translatedTextEl.value = `Error: ${data.error || 'Unknown error'}`;
+        });
+        
+        // Listen for auto-populate and rewrite styles message
+        ipcRenderer.on('auto-populate-and-rewrite', (event, text) => {
+            if (text && text.trim()) {
+                safeConsole.log('Auto-populating text and running rewrite styles');
+                
+                // Populate the source text
+                sourceTextEl.value = text.trim();
+                
+                // Automatically run rewrite styles after a short delay
+                setTimeout(() => {
+                    performRephrasely();
+                }, 100);
+            }
+        });
+        
+        // Settings from main process
+        ipcRenderer.on('load-settings', (event, settings) => {
+            if (settings.targetLanguage) {
+                targetLanguageSelect.value = settings.targetLanguage;
+                setDirection();
+            }
+            
+            applyDarkMode(settings.darkMode || false);
+        });
+        
+        // Event listeners
+        window.addEventListener('DOMContentLoaded', () => {
+            ipcRenderer.send('get-settings');
+            
+            // Set initial direction based on selected language
+            setDirection();
+            
+            // Set initial result field as left-aligned for placeholder
+            // This state is maintained until setDirection is called
+            translatedTextEl.style.textAlign = 'left';
+            translatedTextEl.style.direction = 'ltr';
+        });
+        
+        // Function to paste text from clipboard
+        function pasteFromClipboard() {
+            try {
+                const clipboardText = clipboard.readText();
+                if (clipboardText) {
+                    sourceTextEl.value = clipboardText;
+                    sourceTextEl.focus();
+                    
+                    // Show feedback to the user
+                    selectionInfoText.textContent = 'Text pasted from clipboard';
+                    selectionStatusBar.classList.add('active');
+                    
+                    // Hide after a delay
+                    setTimeout(() => {
+                        selectionStatusBar.classList.remove('active');
+                    }, 1500);
+                }
+            } catch (error) {
+                console.error('Error pasting from clipboard:', error);
+                // Show a more user-friendly error in case the clipboard access fails
+                selectionInfoText.textContent = 'Could not access clipboard';
+                selectionStatusBar.classList.add('active');
+                
+                // Hide after a delay
+                setTimeout(() => {
+                    selectionStatusBar.classList.remove('active');
+                }, 1500);
+            }
+        }
+        
+        // Safely read from clipboard with error handling
+        function safeReadClipboard() {
+            try {
+                return clipboard.readText() || '';
+            } catch (error) {
+                console.error('Failed to read clipboard:', error);
+                return '';
+            }
+        }
+        
+        // Translate button
+        translateBtn.addEventListener('click', () => {
+            performTranslation();
+        });
+        
+        // Rephrasely button
+        rephraselyBtn.addEventListener('click', () => {
+            performRephrasely();
+        });
+        
+        // Paste button
+        document.getElementById('paste-btn').addEventListener('click', () => {
+            pasteFromClipboard();
+        });
+        
+        // Language change
+        targetLanguageSelect.addEventListener('change', setDirection);
+        
+        // Enable paste with Ctrl+V
+        sourceTextEl.addEventListener('keydown', (e) => {
+            // For Ctrl+Enter translate
+            if (e.key === 'Enter' && e.ctrlKey) {
+                performTranslation();
+                return;
+            }
+            
+            // For Ctrl+V paste - explicitly handle it again here for redundancy
+            if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+                try {
+                    // First try to let the browser handle it natively
+                    // Fallback will trigger if needed through the document keydown handler
+                    e.stopPropagation(); // Don't duplicate the handling
+                } catch (err) {
+                    console.error('Error in paste event:', err);
+                }
             }
         });
         
@@ -1101,168 +1252,170 @@ IMPORTANT: Return ONLY a JSON array with a single object containing all modes, i
             }
         });
         
-        // Listen for translation error
-        ipcRenderer.on('direct-translation-error', (event, data) => {
-            const loadingSpinner = translatedTextEl.parentNode.querySelector('.loader');
-            if (loadingSpinner) {
-                loadingSpinner.remove();
-            }
-            
-            translatedTextEl.value = `Error: ${data.error || 'Unknown error'}`;
-        });
-        
-        // Settings from main process
-        ipcRenderer.on('load-settings', (event, settings) => {
-            if (settings.targetLanguage) {
-                targetLanguageSelect.value = settings.targetLanguage;
-                setDirection();
-            }
-            
-            applyDarkMode(settings.darkMode || false);
-        });
-        
-        // Event listeners
-        window.addEventListener('DOMContentLoaded', () => {
-            ipcRenderer.send('get-settings');
-            
-            // Set initial direction based on selected language
-            setDirection();
-            
-            // Set initial result field as left-aligned for placeholder
-            // This state is maintained until setDirection is called
-            translatedTextEl.style.textAlign = 'left';
-            translatedTextEl.style.direction = 'ltr';
-        });
-        
-        // Function to paste text from clipboard
-        function pasteFromClipboard() {
-            try {
-                const clipboardText = clipboard.readText();
-                if (clipboardText) {
-                    sourceTextEl.value = clipboardText;
-                    sourceTextEl.focus();
-                    
-                    // Show feedback to the user
-                    selectionInfoText.textContent = 'Text pasted from clipboard';
-                    selectionStatusBar.classList.add('active');
-                    
-                    // Hide after a delay
-                    setTimeout(() => {
-                        selectionStatusBar.classList.remove('active');
-                    }, 1500);
-                }
-            } catch (error) {
-                console.error('Error pasting from clipboard:', error);
-                // Show a more user-friendly error in case the clipboard access fails
-                selectionInfoText.textContent = 'Could not access clipboard';
-                selectionStatusBar.classList.add('active');
-                
-                // Hide after a delay
-                setTimeout(() => {
-                    selectionStatusBar.classList.remove('active');
-                }, 1500);
-            }
-        }
-        
-        // Safely read from clipboard with error handling
-        function safeReadClipboard() {
-            try {
-                return clipboard.readText() || '';
-            } catch (error) {
-                console.error('Failed to read clipboard:', error);
-                return '';
-            }
-        }
-        
-        // Translate button
-        translateBtn.addEventListener('click', () => {
-            performTranslation();
-        });
-        
-        // Rephrasely button
-        rephraselyBtn.addEventListener('click', () => {
-            performRephrasely();
-        });
-        
-        // Paste button
-        document.getElementById('paste-btn').addEventListener('click', () => {
-            pasteFromClipboard();
-        });
-        
-        // Language change
-        targetLanguageSelect.addEventListener('change', setDirection);
-        
-        // Enable paste with Ctrl+V
-        sourceTextEl.addEventListener('keydown', (e) => {
-            // For Ctrl+Enter translate
-            if (e.key === 'Enter' && e.ctrlKey) {
-                performTranslation();
-                return;
-            }
-            
-            // For Ctrl+V paste - explicitly handle it again here for redundancy
-            if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
-                try {
-                    // First try to let the browser handle it natively
-                    // Fallback will trigger if needed through the document keydown handler
-                    e.stopPropagation(); // Don't duplicate the handling
-                } catch (err) {
-                    console.error('Error in paste event:', err);
-                }
-            }
-        });
-        
         // Format Rephrasely output to highlight keywords
         function formatRephraselyOutput(text) {
             try {
                 // First try to parse as JSON
                 let jsonData;
+                let cleanText = text.trim();
+                
                 try {
-                    // Handle case when the text might contain JSON
-                    if (text.includes('[{') && text.includes('}]')) {
+                    // Remove common markdown formatting if present
+                    if (cleanText.includes('```')) {
+                        cleanText = cleanText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+                    }
+                    
+                    // Handle case when the text might contain JSON embedded in other text
+                    if (cleanText.includes('[{') && cleanText.includes('}]')) {
                         // Extract JSON portion if it's embedded in other text
-                        const jsonMatch = text.match(/\[\s*\{.*\}\s*\]/s);
+                        const jsonMatch = cleanText.match(/\[\s*\{[\s\S]*?\}\s*\]/);
                         if (jsonMatch) {
                             jsonData = JSON.parse(jsonMatch[0]);
                         } else {
-                            jsonData = JSON.parse(text);
+                            // Try parsing the entire text as JSON
+                            jsonData = JSON.parse(cleanText);
+                        }
+                    } else if (cleanText.includes('{') && cleanText.includes('}') && !cleanText.startsWith('[')) {
+                        // Single object format - wrap it in an array
+                        const objMatch = cleanText.match(/\{[\s\S]*\}/);
+                        if (objMatch) {
+                            jsonData = [JSON.parse(objMatch[0])];
                         }
                     } else {
-                        jsonData = JSON.parse(text);
+                        // Try parsing as-is
+                        jsonData = JSON.parse(cleanText);
                     }
 
-                    // If parsing succeeded and we have an array with the expected structure
-                    if (Array.isArray(jsonData) && jsonData.length > 0) {
+                    // If parsing succeeded and we have the expected structure
+                    if (jsonData && (Array.isArray(jsonData) || typeof jsonData === 'object')) {
                         let formattedOutput = '<div class="modern-rewrite-container">';
                         
-                        // Get the first item in the array
-                        const styles = jsonData[0];
+                        // Handle both array and object formats
+                        let styles;
+                        if (Array.isArray(jsonData) && jsonData.length > 0) {
+                            styles = jsonData[0];
+                        } else if (typeof jsonData === 'object' && jsonData !== null) {
+                            styles = jsonData;
+                        }
                         
-                        // Create formatted HTML for each style - minimize whitespace
-                        for (const [style, content] of Object.entries(styles)) {
-                            if (content && content.trim()) {
-                                formattedOutput += `<div class="modern-rewrite-item"><div class="modern-rewrite-label">${style}</div><div class="modern-rewrite-content">${content}</div></div>`;
+                        if (styles && typeof styles === 'object') {
+                            // Define the order of styles for consistent display
+                            const styleOrder = ['standard', 'fluency', 'humanize', 'formal', 'academic', 'simple', 'creative', 'expand', 'shorten'];
+                            
+                            // First show ordered styles
+                            for (const style of styleOrder) {
+                                if (styles[style] && typeof styles[style] === 'string' && styles[style].trim()) {
+                                    const content = styles[style].trim();
+                                    formattedOutput += `<div class="modern-rewrite-item"><div class="modern-rewrite-label">${style}</div><div class="modern-rewrite-content">${content}</div></div>`;
+                                }
+                            }
+                            
+                            // Then show any additional styles not in the ordered list
+                            for (const [style, content] of Object.entries(styles)) {
+                                if (!styleOrder.includes(style) && content && typeof content === 'string' && content.trim()) {
+                                    formattedOutput += `<div class="modern-rewrite-item"><div class="modern-rewrite-label">${style}</div><div class="modern-rewrite-content">${content.trim()}</div></div>`;
+                                }
                             }
                         }
                         
                         formattedOutput += '</div>';
-                        return formattedOutput || "No valid rewrite styles were found.";
+                        
+                        if (formattedOutput.includes('modern-rewrite-item')) {
+                            return formattedOutput;
+                        }
                     }
                 } catch (e) {
-                    console.log("JSON parsing failed, falling back to regex formatting", e);
+                    console.log("JSON parsing failed, trying alternative parsing methods", e);
+                    
+                    // Try alternative parsing for malformed JSON
+                    const altText = cleanText.replace(/[\n\r]+/g, ' ').trim();
+                    
+                    // Look for object-like patterns in the text
+                    const objectPattern = /\{[^{}]*"(standard|fluency|humanize|formal|academic|simple|creative|expand|shorten)"[^{}]*\}/g;
+                    const matches = altText.match(objectPattern);
+                    
+                    if (matches && matches.length > 0) {
+                        // Try to fix and parse the JSON-like text
+                        const fixedJson = matches[0]
+                            .replace(/([{,]\s*)([a-zA-Z_]+)(\s*):/g, '$1"$2"$3:') // Add quotes to keys
+                            .replace(/:\s*([^",\{\}\[\]]+)(\s*[,}])/g, ':"$1"$2') // Add quotes to values
+                            .replace(/,\s*}/g, '}'); // Remove trailing commas
+                        
+                        try {
+                            const parsed = JSON.parse(fixedJson);
+                            if (parsed && typeof parsed === 'object') {
+                                let formattedOutput = '<div class="modern-rewrite-container">';
+                                
+                                for (const [style, content] of Object.entries(parsed)) {
+                                    if (content && content.trim()) {
+                                        formattedOutput += `<div class="modern-rewrite-item"><div class="modern-rewrite-label">${style}</div><div class="modern-rewrite-content">${content.trim()}</div></div>`;
+                                    }
+                                }
+                                
+                                formattedOutput += '</div>';
+                                
+                                if (formattedOutput.includes('modern-rewrite-item')) {
+                                    return formattedOutput;
+                                }
+                            }
+                        } catch (fixError) {
+                            console.log("Alternative JSON fixing failed", fixError);
+                        }
+                    }
                 }
                 
-                // Fallback to the original regex-based formatting
+                // Fallback to regex-based formatting for non-JSON responses
                 const keywords = [
                     'standard', 'fluency', 'humanize', 'formal', 
                     'academic', 'simple', 'creative', 'expand', 'shorten'
                 ];
                 
-                // Search pattern to find keywords with colons
-                const pattern = new RegExp(`(${keywords.join('|')})(\\s*)(\\:)`, 'g');
+                // Check if text contains these keywords with colons
+                const hasKeywords = keywords.some(keyword => 
+                    text.includes(keyword + ':') || text.includes(keyword + '":')
+                );
                 
-                // Replace with HTML with colored classes
+                if (hasKeywords) {
+                    // Try to format as individual items
+                    let formattedOutput = '<div class="modern-rewrite-container">';
+                    
+                    // Split by keywords and format each section
+                    const lines = text.split(/\n|(?="(?:standard|fluency|humanize|formal|academic|simple|creative|expand|shorten)")/);
+                    
+                    for (const line of lines) {
+                        const trimmedLine = line.trim();
+                        if (!trimmedLine) continue;
+                        
+                        for (const keyword of keywords) {
+                            const patterns = [
+                                new RegExp(`"?${keyword}"?\\s*:\\s*"?([^"\\n,}]+)"?`, 'i'),
+                                new RegExp(`${keyword}\\s*:\\s*(.+?)(?=(?:"?(?:${keywords.join('|')})"?\\s*:|$))`, 'i')
+                            ];
+                            
+                            for (const pattern of patterns) {
+                                const match = trimmedLine.match(pattern);
+                                if (match && match[1]) {
+                                    const content = match[1].trim().replace(/["\\]/g, '');
+                                    if (content) {
+                                        formattedOutput += `<div class="modern-rewrite-item"><div class="modern-rewrite-label">${keyword}</div><div class="modern-rewrite-content">${content}</div></div>`;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    formattedOutput += '</div>';
+                    
+                    if (formattedOutput.includes('modern-rewrite-item')) {
+                        return formattedOutput;
+                    }
+                }
+                
+                // Final fallback: simple keyword highlighting
+                const pattern = new RegExp(`(${keywords.join('|')})(\\s*)(\\:)`, 'g');
                 return text.replace(pattern, '<span class="rephrasely-keyword">$1</span>$2<span class="rephrasely-colon">:</span>');
+                
             } catch (error) {
                 console.error("Error formatting rewrite styles:", error);
                 return text; // Return original text if there's any error

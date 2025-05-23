@@ -4,6 +4,7 @@ const fs = require('fs');
 const axios = require('axios');
 const Store = require('electron-store');
 const os = require('os');
+const updateHandler = require('./update-handler');
 
 // Import nut-js modules for Windows keyboard control
 let keyboard, Key;
@@ -113,7 +114,9 @@ const safeConsole = {
 
 // Default application settings
 const defaultSettings = {
+  apiProvider: 'gemini',
   apiKey: '',
+  geminiApiKey: '',
   targetLanguage: 'persian',
   useDirectIPConnection: false,
   languageModel: 'deepseek/deepseek-prover-v2:free',
@@ -510,6 +513,8 @@ app.whenReady().then(() => {
     // Setup application watchdog to detect and recover from hangs
     setupWatchdog();
     
+    updateHandler.checkForUpdates(false);
+    
     safeConsole.log('Application started successfully');
   } catch (error) {
     safeConsole.error('Error during application startup:', error);
@@ -617,7 +622,43 @@ function createTray() {
     },
     {
       label: 'Language Tools',
-      click: () => openTranslateNow()
+      click: () => {
+        // Use AppleScript to copy selected text first
+        if (process.platform === 'darwin') {
+          copySelectedTextWithAppleScript()
+            .then(() => {
+              // After copy, get clipboard text and open translate now
+              setTimeout(() => {
+                const clipboardText = getClipboardText();
+                if (clipboardText && clipboardText.trim()) {
+                  safeConsole.log('Found selected text, opening Language Tools with auto rewrite');
+                  openTranslateNow(clipboardText.trim());
+                } else {
+                  safeConsole.log('No selected text found, opening Language Tools normally');
+                  openTranslateNow();
+                }
+              }, 300);
+            })
+            .catch(error => {
+              safeConsole.error('Error with AppleScript copy:', error);
+              // If AppleScript failed, try to get existing clipboard content
+              const clipboardText = getClipboardText();
+              if (clipboardText && clipboardText.trim()) {
+                openTranslateNow(clipboardText.trim());
+              } else {
+                openTranslateNow();
+              }
+            });
+        } else {
+          // For non-macOS, try to use clipboard directly
+          const clipboardText = getClipboardText();
+          if (clipboardText && clipboardText.trim()) {
+            openTranslateNow(clipboardText.trim());
+          } else {
+            openTranslateNow();
+          }
+        }
+      }
     },
     {
       label: 'Test Translation (Hello World)',
@@ -637,6 +678,10 @@ function createTray() {
     {
       label: 'About',
       click: () => openAbout()
+    },
+    {
+      label: 'Check for Updates',
+      click: () => updateHandler.checkForUpdates()
     },
     { type: 'separator' },
     {
@@ -769,7 +814,42 @@ function registerShortcut() {
   try {
     ltRegistered = globalShortcut.register(ltShortcutString, () => {
       safeConsole.log(`Language Tools shortcut triggered: ${ltShortcutString}`);
-      openTranslateNow();
+      
+      // Use AppleScript to copy selected text first
+      if (process.platform === 'darwin') {
+        copySelectedTextWithAppleScript()
+          .then(() => {
+            // After copy, get clipboard text and open translate now
+            setTimeout(() => {
+              const clipboardText = getClipboardText();
+              if (clipboardText && clipboardText.trim()) {
+                safeConsole.log('Found selected text, opening Language Tools with auto rewrite');
+                openTranslateNow(clipboardText.trim());
+              } else {
+                safeConsole.log('No selected text found, opening Language Tools normally');
+                openTranslateNow();
+              }
+            }, 300);
+          })
+          .catch(error => {
+            safeConsole.error('Error with AppleScript copy:', error);
+            // If AppleScript failed, try to get existing clipboard content
+            const clipboardText = getClipboardText();
+            if (clipboardText && clipboardText.trim()) {
+              openTranslateNow(clipboardText.trim());
+            } else {
+              openTranslateNow();
+            }
+          });
+      } else {
+        // For non-macOS, try to use clipboard directly
+        const clipboardText = getClipboardText();
+        if (clipboardText && clipboardText.trim()) {
+          openTranslateNow(clipboardText.trim());
+        } else {
+          openTranslateNow();
+        }
+      }
     });
     
     if (ltRegistered) {
@@ -936,7 +1016,43 @@ function updateTrayMenu(activeShortcuts = []) {
     },
     {
       label: 'Language Tools',
-      click: () => openTranslateNow()
+      click: () => {
+        // Use AppleScript to copy selected text first
+        if (process.platform === 'darwin') {
+          copySelectedTextWithAppleScript()
+            .then(() => {
+              // After copy, get clipboard text and open translate now
+              setTimeout(() => {
+                const clipboardText = getClipboardText();
+                if (clipboardText && clipboardText.trim()) {
+                  safeConsole.log('Found selected text, opening Language Tools with auto rewrite');
+                  openTranslateNow(clipboardText.trim());
+                } else {
+                  safeConsole.log('No selected text found, opening Language Tools normally');
+                  openTranslateNow();
+                }
+              }, 300);
+            })
+            .catch(error => {
+              safeConsole.error('Error with AppleScript copy:', error);
+              // If AppleScript failed, try to get existing clipboard content
+              const clipboardText = getClipboardText();
+              if (clipboardText && clipboardText.trim()) {
+                openTranslateNow(clipboardText.trim());
+              } else {
+                openTranslateNow();
+              }
+            });
+        } else {
+          // For non-macOS, try to use clipboard directly
+          const clipboardText = getClipboardText();
+          if (clipboardText && clipboardText.trim()) {
+            openTranslateNow(clipboardText.trim());
+          } else {
+            openTranslateNow();
+          }
+        }
+      }
     },
     { type: 'separator' },
     {
@@ -946,6 +1062,10 @@ function updateTrayMenu(activeShortcuts = []) {
     {
       label: 'About',
       click: () => openAbout()
+    },
+    {
+      label: 'Check for Updates',
+      click: () => updateHandler.checkForUpdates()
     },
     { type: 'separator' },
     {
@@ -1028,518 +1148,27 @@ function getClipboardText() {
   return text.trim();
 }
 
-// Send translation request to API and get translation
-async function translateSelectedText(event, atPosition = null) {
-  try {
-    let text = '';
-    
-    // Copy selected text to clipboard
-    if (process.platform === 'darwin') {
-      await copySelectedTextWithAppleScript();
-      // Wait a bit for text to be saved to clipboard
-      await new Promise(resolve => setTimeout(resolve, 300));
-      text = getClipboardText();
-    } else {
-      try {
-        // For Windows/Linux, use Ctrl+C
-        await keyboard.pressKey(Key.LeftControl, Key.C);
-        await keyboard.releaseKey(Key.LeftControl, Key.C);
-        // Wait a bit for text to be saved to clipboard
-        await new Promise(resolve => setTimeout(resolve, 300));
-        text = getClipboardText();
-      } catch (keyboardError) {
-        safeConsole.error('Error using keyboard shortcut:', keyboardError);
-        text = getClipboardText(); // Try to get whatever is in clipboard
-      }
-    }
-    
-    // If text is empty don't translate
-    if (!text || text.trim() === '') {
-      safeConsole.log('No text to translate');
-      return;
-    }
-    
-    // Save current text for later reference
-    lastClipboardText = text;
-    
-    safeConsole.log(`Translating: ${text.substring(0, 30)}${text.length > 30 ? '...' : ''}`);
-    
-    // Create translation window if needed
-    if (!translationWindow || translationWindow.isDestroyed()) {
-      createTranslationWindow(atPosition);
-      
-      // Wait for window to be fully created
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } else {
-      translationWindow.show();
-    }
-    
-    // Send text to translation window
-    sendTextToTranslationWindow(text);
-    
-    // Translation settings
-    const settings = store.get();
-    
-    try {
-      // Translate text
-      const translatedText = await performTranslationRequest(text, settings.targetLanguage);
-      
-      // Send translation result to window
-      if (translationWindow && !translationWindow.isDestroyed()) {
-        translationWindow.webContents.send('translation-complete', {
-          translatedText: translatedText
-        });
-      }
-    } catch (error) {
-      safeConsole.error(`Translation error: ${error.message}`);
-      
-      if (translationWindow && !translationWindow.isDestroyed()) {
-        translationWindow.webContents.send('translation-error', {
-          error: error.message || 'Translation failed'
-        });
-      }
-    }
-  } catch (error) {
-    safeConsole.error(`Translation process error: ${error}`);
-  }
-}
-
-// Send text to translation window
-function sendTextToTranslationWindow(text) {
-  if (!text || !translationWindow) return;
-  
-  try {
-    safeConsole.log('Sending text to translation window');
-    
-    if (translationWindow && !translationWindow.isDestroyed()) {
-      translationWindow.webContents.send('start-translation', { text });
-      
-      // Send translation request to API
-      performTranslationRequest(text)
-        .then(translation => {
-          if (translationWindow && !translationWindow.isDestroyed()) {
-            translationWindow.webContents.send('translation-complete', {
-              originalText: text,
-              translatedText: translation
-            });
-            
-            // Check settings for vocabulary learning
-            const settings = store.get();
-            if (settings.activeLearnVocabulary) {
-              translationWindow.webContents.send('vocabulary-loading');
-              
-              fetchDifficultWords(text, settings)
-                .then(vocabulary => {
-                  if (translationWindow && !translationWindow.isDestroyed()) {
-                    translationWindow.webContents.send('vocabulary-complete', { vocabulary });
-                  }
-                })
-                .catch(error => {
-                  safeConsole.error('Vocabulary error:', error);
-                  if (translationWindow && !translationWindow.isDestroyed()) {
-                    translationWindow.webContents.send('vocabulary-error');
-                  }
-                });
-            }
-          }
-        })
-        .catch(error => {
-          safeConsole.error('Translation error:', error);
-          if (translationWindow && !translationWindow.isDestroyed()) {
-            translationWindow.webContents.send('translation-error', { 
-              error: error.message || 'Translation failed' 
-            });
-          }
-        });
-    }
-  } catch (error) {
-    safeConsole.error(`Error sending to translation window: ${error.message}`);
-    // Try to show error if window is available
-    if (translationWindow && !translationWindow.isDestroyed()) {
-      try {
-        translationWindow.webContents.send('translation-error', { 
-          error: `Application error: ${error.message}` 
-        });
-      } catch (e) {
-        safeConsole.error('Failed to send error to window:', e);
-      }
-    }
-  }
-}
-
-// Function to create a browser window with appropriate options
-function createWindow(options, windowType) {
-  const defaults = {
-    autoHideMenuBar: true,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
-    }
-  };
-  
-  const windowOptions = { ...defaults, ...options };
-  
-  // Set minimum width and height equal to initial size if resizable
-  if (windowOptions.resizable !== false) {
-    windowOptions.minWidth = windowOptions.width;
-    windowOptions.minHeight = windowOptions.height;
-  }
-  
-  const window = new BrowserWindow(windowOptions);
-  
-  // Remove menu completely
-  window.removeMenu();
-  window.setMenu(null);
-  
-  // Handle window close event - hide only for main window, destroy others
-  window.on('close', (event) => {
-    // Prevent closing if app is not fully quitting
-    if (!app.isQuitting) {
-      // On Windows, hide all windows instead of closing them
-      // On macOS, only hide the translation window
-      if (process.platform === 'win32' || windowType === 'translation') {
-        event.preventDefault();
-        window.hide();
-        safeConsole.log(`${windowType} window hidden instead of closed`);
-        return false;
-      } else {
-        // For other windows on non-Windows platforms, let them be properly destroyed
-        safeConsole.log(`${windowType} window will be closed and destroyed`);
-        return true;
-      }
-    }
-    return true;
-  });
-  
-  // Add event for when window is hidden
-  window.on('hide', () => {
-    // Update the appropriate flag based on window type
-    switch (windowType) {
-      case 'translation':
-        isTranslationWindowDestroyed = false;
-        safeConsole.log('translation window was hidden');
-        break;
-      case 'settings':
-        isSettingsWindowDestroyed = false;
-        safeConsole.log('settings window was hidden');
-        break;
-      case 'about':
-        isAboutWindowDestroyed = false;
-        safeConsole.log('about window was hidden');
-        break;
-      case 'translateNow':
-        isTranslateNowWindowDestroyed = false;
-        safeConsole.log('translateNow window was hidden');
-        break;
-    }
-  });
-  
-  // Track when window is actually destroyed
-  window.on('closed', () => {
-    try {
-      safeConsole.log(`${windowType} window was actually destroyed`);
-    } catch (error) {
-      // Silently fail if logging fails
-    }
-    switch (windowType) {
-      case 'translation':
-        isTranslationWindowDestroyed = true;
-        translationWindow = null;
-        break;
-      case 'settings':
-        isSettingsWindowDestroyed = true;
-        settingsWindow = null;
-        break;
-      case 'about':
-        isAboutWindowDestroyed = true;
-        aboutWindow = null;
-        break;
-      case 'translateNow':
-        isTranslateNowWindowDestroyed = true;
-        translateNowWindow = null;
-        break;
-    }
-  });
-  
-  // Update flag when window is created
-  switch (windowType) {
-    case 'translation':
-      isTranslationWindowDestroyed = false;
-      break;
-    case 'settings':
-      isSettingsWindowDestroyed = false;
-      break;
-    case 'about':
-      isAboutWindowDestroyed = false;
-      break;
-    case 'translateNow':
-      isTranslateNowWindowDestroyed = false;
-      break;
-  }
-  
-  return window;
-}
-
-// Create translation window
-function createTranslationWindow() {
-  if (translationWindow) {
-    translationWindow.show();
-    return translationWindow;
-  }
-  
-  translationWindow = createWindow({
-    width: 580,
-    height: 520,
-    show: false,
-    frame: true,
-    resizable: true,
-    fullscreenable: false,
-    title: 'Translation',
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true
-    }
-  }, 'translation');
-
-  // Check for translation.html file
-  const translationHtmlPath = path.join(__dirname, 'renderer', 'translation.html');
-  try {
-    safeConsole.log(`Loading translation window from: ${translationHtmlPath}`);
-  } catch (error) {
-    // Silently fail if logging fails
-  }
-  
-  try {
-    translationWindow.loadFile(translationHtmlPath);
-    
-    translationWindow.once('ready-to-show', () => {
-      translationWindow.show();
-    });
-    
-    // Check for potential errors
-    translationWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-      safeConsole.error(`Failed to load translation window: ${errorDescription} (${errorCode})`);
-    });
-    
-    return translationWindow;
-  } catch (error) {
-    safeConsole.error(`Error creating translation window: ${error.message}`);
-    if (translationWindow) {
-      translationWindow.close();
-      translationWindow = null;
-    }
-    return null;
-  }
-}
-
-// Open settings window
-function openSettings() {
-  // If window exists and is not destroyed, check if it's visible
-  if (settingsWindow && !isSettingsWindowDestroyed) {
-    // If window is minimized, restore it
-    if (settingsWindow.isMinimized()) {
-      settingsWindow.restore();
-    }
-    
-    // If window is not visible, force destroy it so we can recreate it
-    if (!settingsWindow.isVisible()) {
-      try {
-        settingsWindow.destroy();
-        settingsWindow = null;
-        isSettingsWindowDestroyed = true;
-        safeConsole.log('Settings window was forcibly destroyed to recreate it');
-      } catch (error) {
-        safeConsole.error('Error destroying settings window:', error);
-      }
-    } else {
-      // If window is visible, just focus it
-    settingsWindow.focus();
-    return;
-  }
-  }
-  
-  // At this point either the window doesn't exist or we destroyed it
-  // Window is likely damaged, set to null to create a new window
-  if (settingsWindow) {
-    settingsWindow = null;
-  }
-  
-  // Create a new window
-  settingsWindow = createWindow({
-    width: 500,
-    height: 650,
-    title: 'Pro Translator Settings',
-    resizable: true
-  }, 'settings');
-
-  // Check for settings.html file
-  const settingsHtmlPath = path.join(__dirname, 'renderer', 'settings.html');
-  try {
-    safeConsole.log(`Loading settings window from: ${settingsHtmlPath}`);
-  } catch (error) {
-    // Silently fail if logging fails
-  }
-  
-  try {
-    settingsWindow.loadFile(settingsHtmlPath);
-    
-    // Check for potential errors
-    settingsWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-      safeConsole.error(`Failed to load settings window: ${errorDescription} (${errorCode})`);
-    });
-    
-    // Add event for when window is shown
-    settingsWindow.on('show', () => {
-      safeConsole.log('Settings window was shown');
-      isSettingsWindowDestroyed = false;
-    });
-    
-  } catch (error) {
-    safeConsole.error(`Error creating settings window: ${error.message}`);
-    if (settingsWindow) {
-      settingsWindow.close();
-      settingsWindow = null;
-      isSettingsWindowDestroyed = true;
-    }
-  }
-}
-
-// Open about window
-function openAbout() {
-  if (aboutWindow) {
-    aboutWindow.focus();
-    return;
-  }
-  
-  aboutWindow = createWindow({
-    width: 350,
-    height: 330,
-    title: 'About Pro Translator',
-    resizable: false,
-    minimizable: false,
-    maximizable: false,
-    fullscreenable: false
-  }, 'about');
-
-  // Check for about.html file
-  const aboutHtmlPath = path.join(__dirname, 'renderer', 'about.html');
-  try {
-    safeConsole.log(`Loading about window from: ${aboutHtmlPath}`);
-  } catch (error) {
-    // Silently fail if logging fails
-  }
-  
-  try {
-    aboutWindow.loadFile(aboutHtmlPath);
-    
-    // Check for potential errors
-    aboutWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-      safeConsole.error(`Failed to load about window: ${errorDescription} (${errorCode})`);
-    });
-  } catch (error) {
-    safeConsole.error(`Error creating about window: ${error.message}`);
-    if (aboutWindow) {
-      aboutWindow.close();
-      aboutWindow = null;
-    }
-  }
-}
-
-// Create direct translation window
-function openTranslateNow() {
-  // If window exists and is not destroyed, check if it's visible
-  if (translateNowWindow && !isTranslateNowWindowDestroyed) {
-    // If window is minimized, restore it
-    if (translateNowWindow.isMinimized()) {
-      translateNowWindow.restore();
-    }
-    
-    // If window is not visible, force destroy it so we can recreate it
-    if (!translateNowWindow.isVisible()) {
-      try {
-        translateNowWindow.destroy();
-        translateNowWindow = null;
-        isTranslateNowWindowDestroyed = true;
-        safeConsole.log('TranslateNow window was forcibly destroyed to recreate it');
-      } catch (error) {
-        safeConsole.error('Error destroying translateNow window:', error);
-      }
-    } else {
-      // If window is visible, just focus it
-    translateNowWindow.focus();
-      return translateNowWindow;
-    }
-  }
-  
-  // At this point either the window doesn't exist or we destroyed it
-  // Window is likely damaged, set to null to create a new window
-  if (translateNowWindow) {
-    translateNowWindow = null;
-  }
-  
-  translateNowWindow = createWindow({
-    width: 850,
-    height: 600,
-    title: 'Language Tools',
-    resizable: true
-  }, 'translateNow');
-
-  // Check for translate-now.html file
-  const translateNowHtmlPath = path.join(__dirname, 'renderer', 'translate-now.html');
-  try {
-    safeConsole.log(`Loading translate-now window from: ${translateNowHtmlPath}`);
-  } catch (error) {
-    // Silently fail if logging fails
-  }
-  
-  try {
-    translateNowWindow.loadFile(translateNowHtmlPath);
-    
-    // Check for potential errors
-    translateNowWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-      safeConsole.error(`Failed to load translate-now window: ${errorDescription} (${errorCode})`);
-    });
-    
-    // Add event for when window is shown
-    translateNowWindow.on('show', () => {
-      safeConsole.log('TranslateNow window was shown');
-      isTranslateNowWindowDestroyed = false;
-    });
-    
-    // Send settings to window ONLY after window is fully loaded
-    translateNowWindow.webContents.once('did-finish-load', () => {
-      const settings = store.get();
-      safeConsole.log('Translate-now window loaded, sending settings');
-      translateNowWindow.webContents.send('load-settings', settings);
-      
-      // Apply dark mode
-      if (settings.darkMode) {
-        safeConsole.log('Applying dark mode to translate-now window');
-        translateNowWindow.webContents.send('set-dark-mode', true);
-      }
-    });
-  } catch (error) {
-    safeConsole.error(`Error creating translate-now window: ${error.message}`);
-    if (translateNowWindow) {
-      translateNowWindow.close();
-      isTranslateNowWindowDestroyed = true;
-      translateNowWindow = null;
-    }
-  }
-}
-
 // Send translation request to API
 async function performTranslationRequest(text, targetLang = null) {
   const settings = store.get();
   
-  // Ensure API key is valid
-  if (!settings.apiKey || settings.apiKey.trim() === '') {
-    throw new Error('Please set a valid API key in settings');
-  }
-  
   // Determine target language for translation
   const targetLanguage = targetLang || settings.targetLanguage || 'persian';
+  const apiProvider = settings.apiProvider || 'openrouter';
+  
+  if (apiProvider === 'gemini') {
+    return await performGeminiTranslation(text, targetLanguage, settings);
+  } else {
+    return await performOpenRouterTranslation(text, targetLanguage, settings);
+  }
+}
+
+// OpenRouter translation function
+async function performOpenRouterTranslation(text, targetLanguage, settings) {
+  // Ensure API key is valid
+  if (!settings.apiKey || settings.apiKey.trim() === '') {
+    throw new Error('Please set a valid OpenRouter API key in settings');
+  }
   
   // Determine API URL based on direct connection settings
   const apiUrl = settings.useDirectIPConnection 
@@ -1549,6 +1178,7 @@ async function performTranslationRequest(text, targetLang = null) {
   // Input message for translation
   const userMessage = `Please translate the following text to ${targetLanguage}.
   IMPORTANT: Return ONLY the raw translated text with no formatting, no code blocks, no backticks, no quotes, and no other symbols surrounding it.
+  Do not include any explanations, notes, or additional text whatsoever - ONLY return the pure translation itself.
   Text: ${text}`;
   
   // Build request body
@@ -1594,12 +1224,17 @@ async function performTranslationRequest(text, targetLang = null) {
       // Remove any remaining ```
       translatedText = translatedText.replace(/```/g, '');
       
+      // Remove common explanation patterns
+      translatedText = translatedText.replace(/^(Here is|Here's|The translation|Translation:|Translated text:|Here is the translation:).*?\n/i, '');
+      translatedText = translatedText.replace(/^[^a-zA-Z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\u0590-\u05FF]+/, ''); // Remove leading non-text characters
+      translatedText = translatedText.replace(/[\n\r]+(Note:|Please note:).*$/i, ''); // Remove notes at the end
+      
       return translatedText.trim();
     } else {
-      throw new Error('Invalid response format from translation API');
+      throw new Error('No translation content received from OpenRouter');
     }
   } catch (error) {
-    safeConsole.error('Translation API error:', error);
+    safeConsole.error('OpenRouter API error:', error);
     
     if (error.response) {
       // HTTP error received from server
@@ -1610,6 +1245,93 @@ async function performTranslationRequest(text, targetLang = null) {
     } else {
       // Error in request setup
       throw new Error(`Error: ${error.message}`);
+    }
+  }
+}
+
+// Gemini translation function
+async function performGeminiTranslation(text, targetLanguage, settings) {
+  // Ensure Gemini API key is valid
+  if (!settings.geminiApiKey || settings.geminiApiKey.trim() === '') {
+    throw new Error('Please set a valid Gemini API key in settings');
+  }
+  
+  // Gemini API URL
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${settings.geminiApiKey}`;
+  
+  // Input message for translation
+  const userMessage = `Please translate the following text to ${targetLanguage}.
+  IMPORTANT: Return ONLY the raw translated text with no formatting, no code blocks, no backticks, no quotes, and no other symbols surrounding it.
+  Do not include any explanations, notes, or additional text whatsoever - ONLY return the pure translation itself.
+  Text: ${text}`;
+  
+  // Build request body for Gemini API
+  const requestBody = {
+    contents: [
+      {
+        parts: [
+          {
+            text: userMessage
+          }
+        ]
+      }
+    ]
+  };
+  
+  try {
+    // Send request
+    const response = await axios.post(apiUrl, requestBody, {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000 // 30 seconds timeout
+    });
+    
+    // Extract translated text from Gemini response format
+    if (response.data && 
+        response.data.candidates && 
+        response.data.candidates.length > 0 && 
+        response.data.candidates[0].content &&
+        response.data.candidates[0].content.parts &&
+        response.data.candidates[0].content.parts.length > 0 &&
+        response.data.candidates[0].content.parts[0].text) {
+      
+      let translatedText = response.data.candidates[0].content.parts[0].text;
+      
+      // Remove markdown blockquotes from response
+      translatedText = translatedText.replace(/^```[\s\S]*?```$/g, function(match) {
+        // Remove first and last lines which contain ```
+        const lines = match.split('\n');
+        if (lines.length >= 3) {
+          return lines.slice(1, -1).join('\n');
+        }
+        return match.replace(/```/g, '');
+      });
+      
+      // Remove any remaining ```
+      translatedText = translatedText.replace(/```/g, '');
+      
+      // Remove common explanation patterns
+      translatedText = translatedText.replace(/^(Here is|Here's|The translation|Translation:|Translated text:|Here is the translation:).*?\n/i, '');
+      translatedText = translatedText.replace(/^[^a-zA-Z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\u0590-\u05FF]+/, ''); // Remove leading non-text characters
+      translatedText = translatedText.replace(/[\n\r]+(Note:|Please note:).*$/i, ''); // Remove notes at the end
+      
+      return translatedText.trim();
+    } else {
+      throw new Error('No translation content received from Gemini');
+    }
+  } catch (error) {
+    safeConsole.error('Gemini API error:', error);
+    
+    if (error.response) {
+      // HTTP error received from server
+      throw new Error(`Gemini server error: ${error.response.status} - ${error.response.data?.error?.message || 'Unknown error'}`);
+    } else if (error.request) {
+      // Sent request but no response received
+      throw new Error('No response received from Gemini server. Please check your internet connection.');
+    } else {
+      // Error in request setup
+      throw new Error(`Gemini error: ${error.message}`);
     }
   }
 }
@@ -1943,4 +1665,514 @@ function setupWatchdog() {
   }, 5000);
   
   safeConsole.log('Application watchdog started');
+}
+
+// Send translation request to API and get translation
+async function translateSelectedText(event, atPosition = null) {
+  try {
+    let text = '';
+    
+    // Copy selected text to clipboard
+    if (process.platform === 'darwin') {
+      await copySelectedTextWithAppleScript();
+      // Wait a bit for text to be saved to clipboard
+      await new Promise(resolve => setTimeout(resolve, 300));
+      text = getClipboardText();
+    } else {
+      try {
+        // For Windows/Linux, use Ctrl+C
+        await keyboard.pressKey(Key.LeftControl, Key.C);
+        await keyboard.releaseKey(Key.LeftControl, Key.C);
+        // Wait a bit for text to be saved to clipboard
+        await new Promise(resolve => setTimeout(resolve, 300));
+        text = getClipboardText();
+      } catch (keyboardError) {
+        safeConsole.error('Error using keyboard shortcut:', keyboardError);
+        text = getClipboardText(); // Try to get whatever is in clipboard
+      }
+    }
+    
+    // If text is empty don't translate
+    if (!text || text.trim() === '') {
+      safeConsole.log('No text to translate');
+      return;
+    }
+    
+    // Save current text for later reference
+    lastClipboardText = text;
+    
+    safeConsole.log(`Translating: ${text.substring(0, 30)}${text.length > 30 ? '...' : ''}`);
+    
+    // Create translation window if needed
+    if (!translationWindow || translationWindow.isDestroyed()) {
+      createTranslationWindow(atPosition);
+      
+      // Wait for window to be fully created
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } else {
+      translationWindow.show();
+    }
+    
+    // Send text to translation window
+    sendTextToTranslationWindow(text);
+    
+    // Translation settings
+    const settings = store.get();
+    
+    try {
+      // Translate text
+      const translatedText = await performTranslationRequest(text, settings.targetLanguage);
+      
+      // Send translation result to window
+      if (translationWindow && !translationWindow.isDestroyed()) {
+        translationWindow.webContents.send('translation-complete', {
+          translatedText: translatedText
+        });
+      }
+    } catch (error) {
+      safeConsole.error(`Translation error: ${error.message}`);
+      
+      if (translationWindow && !translationWindow.isDestroyed()) {
+        translationWindow.webContents.send('translation-error', {
+          error: error.message || 'Translation failed'
+        });
+      }
+    }
+  } catch (error) {
+    safeConsole.error(`Translation process error: ${error}`);
+  }
+}
+
+// Send text to translation window
+function sendTextToTranslationWindow(text) {
+  if (!text || !translationWindow) return;
+  
+  try {
+    safeConsole.log('Sending text to translation window');
+    
+    if (translationWindow && !translationWindow.isDestroyed()) {
+      translationWindow.webContents.send('start-translation', { text });
+      
+      // Send translation request to API
+      performTranslationRequest(text)
+        .then(translation => {
+          if (translationWindow && !translationWindow.isDestroyed()) {
+            translationWindow.webContents.send('translation-complete', {
+              originalText: text,
+              translatedText: translation
+            });
+            
+            // Check settings for vocabulary learning
+            const settings = store.get();
+            if (settings.activeLearnVocabulary) {
+              translationWindow.webContents.send('vocabulary-loading');
+              
+              fetchDifficultWords(text, settings)
+                .then(vocabulary => {
+                  if (translationWindow && !translationWindow.isDestroyed()) {
+                    translationWindow.webContents.send('vocabulary-complete', { vocabulary });
+                  }
+                })
+                .catch(error => {
+                  safeConsole.error('Vocabulary error:', error);
+                  if (translationWindow && !translationWindow.isDestroyed()) {
+                    translationWindow.webContents.send('vocabulary-error');
+                  }
+                });
+            }
+          }
+        })
+        .catch(error => {
+          safeConsole.error('Translation error:', error);
+          if (translationWindow && !translationWindow.isDestroyed()) {
+            translationWindow.webContents.send('translation-error', { 
+              error: error.message || 'Translation failed' 
+            });
+          }
+        });
+    }
+  } catch (error) {
+    safeConsole.error(`Error sending to translation window: ${error.message}`);
+    // Try to show error if window is available
+    if (translationWindow && !translationWindow.isDestroyed()) {
+      try {
+        translationWindow.webContents.send('translation-error', { 
+          error: `Application error: ${error.message}` 
+        });
+      } catch (e) {
+        safeConsole.error('Failed to send error to window:', e);
+      }
+    }
+  }
+}
+
+// Function to create a browser window with appropriate options
+function createWindow(options, windowType) {
+  const defaults = {
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  };
+  
+  const windowOptions = { ...defaults, ...options };
+  
+  // Set minimum width and height equal to initial size if resizable
+  if (windowOptions.resizable !== false) {
+    windowOptions.minWidth = windowOptions.width;
+    windowOptions.minHeight = windowOptions.height;
+  }
+  
+  const window = new BrowserWindow(windowOptions);
+  
+  // Remove menu completely
+  window.removeMenu();
+  window.setMenu(null);
+  
+  // Handle window close event - hide only for main window, destroy others
+  window.on('close', (event) => {
+    // Prevent closing if app is not fully quitting
+    if (!app.isQuitting) {
+      // On Windows, hide all windows instead of closing them
+      // On macOS, only hide the translation window
+      if (process.platform === 'win32' || windowType === 'translation') {
+        event.preventDefault();
+        window.hide();
+        safeConsole.log(`${windowType} window hidden instead of closed`);
+        return false;
+      } else {
+        // For other windows on non-Windows platforms, let them be properly destroyed
+        safeConsole.log(`${windowType} window will be closed and destroyed`);
+        return true;
+      }
+    }
+    return true;
+  });
+  
+  // Add event for when window is hidden
+  window.on('hide', () => {
+    // Update the appropriate flag based on window type
+    switch (windowType) {
+      case 'translation':
+        isTranslationWindowDestroyed = false;
+        safeConsole.log('translation window was hidden');
+        break;
+      case 'settings':
+        isSettingsWindowDestroyed = false;
+        safeConsole.log('settings window was hidden');
+        break;
+      case 'about':
+        isAboutWindowDestroyed = false;
+        safeConsole.log('about window was hidden');
+        break;
+      case 'translateNow':
+        isTranslateNowWindowDestroyed = false;
+        safeConsole.log('translateNow window was hidden');
+        break;
+    }
+  });
+  
+  // Track when window is actually destroyed
+  window.on('closed', () => {
+    try {
+      safeConsole.log(`${windowType} window was actually destroyed`);
+    } catch (error) {
+      // Silently fail if logging fails
+    }
+    switch (windowType) {
+      case 'translation':
+        isTranslationWindowDestroyed = true;
+        translationWindow = null;
+        break;
+      case 'settings':
+        isSettingsWindowDestroyed = true;
+        settingsWindow = null;
+        break;
+      case 'about':
+        isAboutWindowDestroyed = true;
+        aboutWindow = null;
+        break;
+      case 'translateNow':
+        isTranslateNowWindowDestroyed = true;
+        translateNowWindow = null;
+        break;
+    }
+  });
+  
+  // Update flag when window is created
+  switch (windowType) {
+    case 'translation':
+      isTranslationWindowDestroyed = false;
+      break;
+    case 'settings':
+      isSettingsWindowDestroyed = false;
+      break;
+    case 'about':
+      isAboutWindowDestroyed = false;
+      break;
+    case 'translateNow':
+      isTranslateNowWindowDestroyed = false;
+      break;
+  }
+  
+  return window;
+}
+
+// Create translation window
+function createTranslationWindow() {
+  if (translationWindow) {
+    translationWindow.show();
+    return translationWindow;
+  }
+  
+  translationWindow = createWindow({
+    width: 580,
+    height: 520,
+    show: false,
+    frame: true,
+    resizable: true,
+    fullscreenable: false,
+    title: 'Translation',
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      enableRemoteModule: true
+    }
+  }, 'translation');
+
+  // Check for translation.html file
+  const translationHtmlPath = path.join(__dirname, 'renderer', 'translation.html');
+  try {
+    safeConsole.log(`Loading translation window from: ${translationHtmlPath}`);
+  } catch (error) {
+    // Silently fail if logging fails
+  }
+  
+  try {
+    translationWindow.loadFile(translationHtmlPath);
+    
+    translationWindow.once('ready-to-show', () => {
+      translationWindow.show();
+    });
+    
+    // Check for potential errors
+    translationWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+      safeConsole.error(`Failed to load translation window: ${errorDescription} (${errorCode})`);
+    });
+    
+    return translationWindow;
+  } catch (error) {
+    safeConsole.error(`Error creating translation window: ${error.message}`);
+    if (translationWindow) {
+      translationWindow.close();
+      translationWindow = null;
+    }
+    return null;
+  }
+}
+
+// Open settings window
+function openSettings() {
+  // If window exists and is not destroyed, check if it's visible
+  if (settingsWindow && !isSettingsWindowDestroyed) {
+    // If window is minimized, restore it
+    if (settingsWindow.isMinimized()) {
+      settingsWindow.restore();
+    }
+    
+    // If window is not visible, force destroy it so we can recreate it
+    if (!settingsWindow.isVisible()) {
+      try {
+        settingsWindow.destroy();
+        settingsWindow = null;
+        isSettingsWindowDestroyed = true;
+        safeConsole.log('Settings window was forcibly destroyed to recreate it');
+      } catch (error) {
+        safeConsole.error('Error destroying settings window:', error);
+      }
+    } else {
+      // If window is visible, just focus it
+      settingsWindow.focus();
+      return;
+    }
+  }
+  
+  // At this point either the window doesn't exist or we destroyed it
+  // Window is likely damaged, set to null to create a new window
+  if (settingsWindow) {
+    settingsWindow = null;
+  }
+  
+  // Create a new window
+  settingsWindow = createWindow({
+    width: 500,
+    height: 650,
+    title: 'Pro Translator Settings',
+    resizable: true
+  }, 'settings');
+
+  // Check for settings.html file
+  const settingsHtmlPath = path.join(__dirname, 'renderer', 'settings.html');
+  try {
+    safeConsole.log(`Loading settings window from: ${settingsHtmlPath}`);
+  } catch (error) {
+    // Silently fail if logging fails
+  }
+  
+  try {
+    settingsWindow.loadFile(settingsHtmlPath);
+    
+    // Check for potential errors
+    settingsWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+      safeConsole.error(`Failed to load settings window: ${errorDescription} (${errorCode})`);
+    });
+    
+    // Add event for when window is shown
+    settingsWindow.on('show', () => {
+      safeConsole.log('Settings window was shown');
+      isSettingsWindowDestroyed = false;
+    });
+    
+  } catch (error) {
+    safeConsole.error(`Error creating settings window: ${error.message}`);
+    if (settingsWindow) {
+      settingsWindow.close();
+      settingsWindow = null;
+      isSettingsWindowDestroyed = true;
+    }
+  }
+}
+
+// Open about window
+function openAbout() {
+  if (aboutWindow) {
+    aboutWindow.focus();
+    return;
+  }
+  
+  aboutWindow = createWindow({
+    width: 350,
+    height: 330,
+    title: 'About Pro Translator',
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false
+  }, 'about');
+
+  // Check for about.html file
+  const aboutHtmlPath = path.join(__dirname, 'renderer', 'about.html');
+  try {
+    safeConsole.log(`Loading about window from: ${aboutHtmlPath}`);
+  } catch (error) {
+    // Silently fail if logging fails
+  }
+  
+  try {
+    aboutWindow.loadFile(aboutHtmlPath);
+    
+    // Check for potential errors
+    aboutWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+      safeConsole.error(`Failed to load about window: ${errorDescription} (${errorCode})`);
+    });
+  } catch (error) {
+    safeConsole.error(`Error creating about window: ${error.message}`);
+    if (aboutWindow) {
+      aboutWindow.close();
+      aboutWindow = null;
+    }
+  }
+}
+
+// Create direct translation window
+function openTranslateNow(selectedText = null) {
+  // If window exists and is not destroyed, check if it's visible
+  if (translateNowWindow && !isTranslateNowWindowDestroyed) {
+    // If window is minimized, restore it
+    if (translateNowWindow.isMinimized()) {
+      translateNowWindow.restore();
+    }
+    
+    // If window is not visible, force destroy it so we can recreate it
+    if (!translateNowWindow.isVisible()) {
+      try {
+        translateNowWindow.destroy();
+        translateNowWindow = null;
+        isTranslateNowWindowDestroyed = true;
+        safeConsole.log('TranslateNow window was forcibly destroyed to recreate it');
+      } catch (error) {
+        safeConsole.error('Error destroying translateNow window:', error);
+      }
+    } else {
+      // If window is visible, just focus it and send selected text if provided
+      translateNowWindow.focus();
+      if (selectedText) {
+        translateNowWindow.webContents.send('auto-populate-and-rewrite', selectedText);
+      }
+      return translateNowWindow;
+    }
+  }
+  
+  // At this point either the window doesn't exist or we destroyed it
+  // Window is likely damaged, set to null to create a new window
+  if (translateNowWindow) {
+    translateNowWindow = null;
+  }
+  
+  translateNowWindow = createWindow({
+    width: 850,
+    height: 600,
+    title: 'Language Tools',
+    resizable: true
+  }, 'translateNow');
+
+  // Check for translate-now.html file
+  const translateNowHtmlPath = path.join(__dirname, 'renderer', 'translate-now.html');
+  try {
+    safeConsole.log(`Loading translate-now window from: ${translateNowHtmlPath}`);
+  } catch (error) {
+    // Silently fail if logging fails
+  }
+  
+  try {
+    translateNowWindow.loadFile(translateNowHtmlPath);
+    
+    // Check for potential errors
+    translateNowWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+      safeConsole.error(`Failed to load translate-now window: ${errorDescription} (${errorCode})`);
+    });
+    
+    // Add event for when window is shown
+    translateNowWindow.on('show', () => {
+      safeConsole.log('TranslateNow window was shown');
+      isTranslateNowWindowDestroyed = false;
+    });
+    
+    // Send settings to window ONLY after window is fully loaded
+    translateNowWindow.webContents.once('did-finish-load', () => {
+      const settings = store.get();
+      safeConsole.log('Translate-now window loaded, sending settings');
+      translateNowWindow.webContents.send('load-settings', settings);
+      
+      // Apply dark mode
+      if (settings.darkMode) {
+        safeConsole.log('Applying dark mode to translate-now window');
+        translateNowWindow.webContents.send('set-dark-mode', true);
+      }
+      
+      // If we have selected text, send it to auto-populate and run rewrite styles
+      if (selectedText && selectedText.trim()) {
+        safeConsole.log('Sending selected text for auto rewrite styles');
+        translateNowWindow.webContents.send('auto-populate-and-rewrite', selectedText.trim());
+      }
+    });
+  } catch (error) {
+    safeConsole.error(`Error creating translate-now window: ${error.message}`);
+    if (translateNowWindow) {
+      translateNowWindow.close();
+      isTranslateNowWindowDestroyed = true;
+      translateNowWindow = null;
+    }
+  }
 } 
