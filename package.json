@@ -15,10 +15,18 @@
     "build:win": "electron-builder --win --x64",
     "build:linux": "electron-builder --linux",
     "build:all": "electron-builder -mwl",
+    "publish": "electron-builder --publish=always",
+    "publish:mac": "electron-builder --mac --publish=always",
+    "publish:win": "electron-builder --win --publish=always",
+    "publish:linux": "electron-builder --linux --publish=always",
     "dist": "electron-builder --publish never"
   },
   "author": "Morteza Dalil <mortezadalil@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mortezadalil/Pro-Translator.git"
+  },
   "devDependencies": {
     "electron": "^36.2.0",
     "electron-builder": "^26.0.12",
@@ -111,6 +119,10 @@
       ],
       "category": "Utility"
     },
-    "publish": null
+    "publish": {
+      "provider": "github",
+      "owner": "mortezadalil",
+      "repo": "Pro-Translator"
+    }
   }
 }

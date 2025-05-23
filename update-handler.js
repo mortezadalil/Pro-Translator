@@ -32,14 +32,24 @@ class UpdateHandler {
 
     async checkForUpdates(showNoUpdateDialog = true) {
         try {
-            const response = await axios.get(this.releasesUrl);
-            const latestRelease = response.data[0];
+            console.log('Checking for updates...');
+            const response = await axios.get(this.releasesUrl, {
+                timeout: 10000,
+                headers: {
+                    'User-Agent': 'Pro-Translator-App'
+                }
+            });
             
-            if (!latestRelease) {
-                throw new Error('No releases found');
+            console.log('Response received:', response.status);
+            
+            if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
+                throw new Error('No releases found in repository');
             }
 
+            const latestRelease = response.data[0];
             const latestVersion = latestRelease.tag_name.replace('v', '');
+            console.log(`Current version: ${this.currentVersion}, Latest version: ${latestVersion}`);
+            
             // Use the app's icon for dialogs
             const appIcon = path.join(__dirname, 'build', 'icon.png');
             
@@ -66,8 +76,21 @@ class UpdateHandler {
                 });
             }
         } catch (error) {
-            dialog.showErrorBox('Update Check Failed', 
-                'Failed to check for updates. Please try again later.');
+            console.error('Update check error:', error);
+            
+            let errorMessage = 'Failed to check for updates. Please try again later.';
+            
+            if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+                errorMessage = 'No internet connection. Please check your network and try again.';
+            } else if (error.response?.status === 404) {
+                errorMessage = 'Repository not found. Please contact the developer.';
+            } else if (error.response?.status === 403) {
+                errorMessage = 'Rate limit exceeded. Please try again later.';
+            } else if (error.message.includes('No releases found')) {
+                errorMessage = 'No releases available yet. This is the current version.';
+            }
+            
+            dialog.showErrorBox('Update Check Failed', errorMessage);
         }
     }
 
@@ -123,7 +146,7 @@ class UpdateHandler {
             <!DOCTYPE html>
             <html>
                 <head>
-                    <meta charset=\"UTF-8\">
+                    <meta charset="UTF-8">
                     <style>
                         html, body {
                             width: 100%;
@@ -162,10 +185,10 @@ class UpdateHandler {
                 </head>
                 <body>
                     <h3>Downloading New Version</h3>
-                    <div class=\"progress-container\">
-                        <div class=\"progress-bar\" id=\"progress\"></div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progress"></div>
                     </div>
-                    <div class=\"status\" id=\"status\">Preparing download...</div>
+                    <div class="status" id="status">Preparing download...</div>
                     <script>
                         const { ipcRenderer } = require('electron');
                         ipcRenderer.on('update-progress', (event, data) => {
@@ -178,7 +201,82 @@ class UpdateHandler {
                     </script>
                 </body>
             </html>
-        `
+        `;
+
+        // Load the HTML content
+        this.downloadWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+    }
+
+    async downloadUpdate(release) {
+        const downloadUrl = this.getDownloadUrl(release);
+        
+        if (!downloadUrl) {
+            dialog.showErrorBox('Download Error', 'Could not find a compatible download for your platform.');
+            return;
+        }
+
+        this.createDownloadWindow();
+
+        const downloadPath = path.join(os.tmpdir(), path.basename(downloadUrl));
+        const file = fs.createWriteStream(downloadPath);
+
+        try {
+            const response = await axios({
+                method: 'GET',
+                url: downloadUrl,
+                responseType: 'stream'
+            });
+
+            const totalLength = response.headers['content-length'];
+            let downloaded = 0;
+
+            response.data.on('data', (chunk) => {
+                downloaded += chunk.length;
+                const progress = Math.round((downloaded / totalLength) * 100);
+                
+                if (this.downloadWindow && !this.downloadWindow.isDestroyed()) {
+                    this.downloadWindow.webContents.executeJavaScript(`
+                        document.getElementById('progress').style.width = '${progress}%';
+                        document.getElementById('status').textContent = 'Downloading... ${progress}%';
+                    `);
+                }
+            });
+
+            response.data.pipe(file);
+
+            file.on('finish', () => {
+                file.close();
+                
+                if (this.downloadWindow && !this.downloadWindow.isDestroyed()) {
+                    this.downloadWindow.webContents.executeJavaScript(`
+                        document.getElementById('status').textContent = 'Download complete! Opening file...';
+                    `);
+                    
+                    setTimeout(() => {
+                        this.downloadWindow.close();
+                        
+                        // Open the downloaded file
+                        const { shell } = require('electron');
+                        shell.openPath(downloadPath);
+                    }, 2000);
+                }
+            });
+
+            file.on('error', (err) => {
+                console.error('Download error:', err);
+                if (this.downloadWindow && !this.downloadWindow.isDestroyed()) {
+                    this.downloadWindow.close();
+                }
+                dialog.showErrorBox('Download Error', 'Failed to download the update file.');
+            });
+
+        } catch (error) {
+            console.error('Download error:', error);
+            if (this.downloadWindow && !this.downloadWindow.isDestroyed()) {
+                this.downloadWindow.close();
+            }
+            dialog.showErrorBox('Download Error', 'Failed to download the update file.');
+        }
     }
 }
 
